@@ -100,7 +100,7 @@ class Agent:
         return [self.function_to_schema(tool) for tool in self.tools]
     
     @track
-    def run(self,query):
+    def run(self, query, stream=False):
         try:
             self.thread.append({"role":"user","content":query})
 
@@ -108,18 +108,22 @@ class Agent:
                 tool_schemas = self.tools_to_toolschema()
                 tools_map = {tool.__name__: tool for tool in self.tools}
                 
-                response = self.client.chat.completions.create(
+                completion = self.client.chat.completions.create(
                         model=self.model,
                         messages=self.thread,
                         tools=tool_schemas,
-                        temperature=self.temp
+                        temperature=self.temp,
+                        stream=stream
                         )
                 
-                message = response.choices[0].message
+                if stream:
+                    return completion
+                
+                message = completion.choices[0].message
                 self.thread.append(message)
 
-                if message.tool_calls:
-                    for tool_call in message.tool_calls:
+                while completion.choices[0].message.tool_calls:
+                    for tool_call in completion.choices[0].message.tool_calls:
                         print('tool call', tool_call)
                         print(tools_map)
                         result = self.execute_tool_call(tool_call, tools_map)
@@ -130,28 +134,33 @@ class Agent:
                             "content": json.dumps(result),
                         })
 
-                    response = self.client.chat.completions.create(
+                    completion = self.client.chat.completions.create(
                             model=self.model,
                             messages=self.thread,
                             tools=tool_schemas,
                             temperature=self.temp
                             )
-                    return response
-                return response
-            
+                    self.thread.append(completion.choices[0].message)
+                return completion
+                            
             else:
-                response = self.client.chat.completions.create(
+                completion = self.client.chat.completions.create(
                         model=self.model,
                         messages=self.thread,
-                        temperature=self.temp
+                        temperature=self.temp,
+                        stream=stream
                         )
                 
-                message = response.choices[0].message.content
-
+                if stream:
+                    return completion
+                
+                message = completion.choices[0].message.content
                 self.thread.append({"role":"assistant", "content": str(message)})
-                return response
+                return completion
+                
         except Exception as e: 
             print('Exception occured', e)
+            raise e
             
 
     def call_function(self,resp):
@@ -207,9 +216,3 @@ class Agent:
 # print(reply)
 
 # caps_agent.call_function(reply["func_obj"])
-
-        
-
-
-
-
