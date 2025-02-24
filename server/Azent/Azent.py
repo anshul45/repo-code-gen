@@ -1,8 +1,10 @@
 import json, os
 import inspect
 from openai import AzureOpenAI, OpenAI
-from tools.redis_cache import RedisCache
 from dotenv import load_dotenv
+from anthropic import Anthropic
+
+from server.tools.redis_cache import RedisCache
 
 load_dotenv()
 
@@ -28,12 +30,19 @@ class Agent:
             api_key=api_key,
         )
 
+        self.client_type = client_type
+
         if client_type == "azure":
             self.client = AzureOpenAI(
                 api_key=api_key,
                 azure_endpoint=base_url,
                 azure_deployment='gpt-4o-mvp-dev',
                 api_version='2024-02-15-preview'
+            )
+
+        if client_type == 'anthropic':
+            self.client = Anthropic(
+                api_key=os.getenv('ANTHROPIC_API_KEY'),
             )
 
         self.redis_cache = RedisCache()
@@ -124,13 +133,24 @@ class Agent:
             self.overall_thread.append({"role": "user", "content": str(query)})
 
             if not self.tools:
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=self.thread,
-                    temperature=self.temp,
-                    response_format={'type': 'json_object'} if response_format == 'json' else None
-                )
-                message = response.choices[0].message.content
+                if self.client_type == 'anthropic':
+
+                    message = self.client.messages.create(
+                        model='claude-3-5-sonnet-latest',
+                        max_tokens=1024,
+                        messages=self.thread[1:],
+                        system=self.thread[0]['content'] if self.thread else ''
+                    ).content[0].text
+
+                else:
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=self.thread,
+                        temperature=self.temp,
+                        response_format={'type': 'json_object'} if response_format == 'json' else None
+                    )
+                    message = response.choices[0].message.content
+
                 self.thread.append({"role": "assistant", "content": str(message)})
                 self.overall_thread.append({"role": "assistant", "content": str(message)})
                 self.save_thread()
@@ -188,9 +208,9 @@ class Agent:
                                 "name": tool_call.function.name,
                                 "content": json.dumps(result) if result is not None else "{}",
                                 "agent_name": self.name,
-                                "type": "json" if tool_call.function.name in [
+                                "type": "json-files" if tool_call.function.name in [
                                     'get_files_with_description'] else 'json-button' if tool_call.function.name in [
-                                    'get_activities_by_activity_name', 'get_hotels'] else 'text'
+                                    'get_activities_by_activity_name', 'get_hotels'] else 'code' if self.name == 'coder_agent' else 'text'
                             }
                             self.thread.append(tool_response)
                             self.overall_thread.append(tool_response)

@@ -29,7 +29,7 @@ class FileSummaryAgent:
                 file_content = file.read()
 
         try:
-            response = agent.run(f'create concise summary of the code in the file {file_path} with content: \n {file_content}')
+            response = agent.generate_response(f'create concise summary of the code in the file {file_path} with content: \n {file_content}')
             exact_response = response.choices[0].message.content
             print("summary", exact_response[:100])
             return exact_response

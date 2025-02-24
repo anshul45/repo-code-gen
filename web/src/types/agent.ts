@@ -5,4 +5,5 @@ export interface AgentResponse {
 export interface ChatRequest {
   message: string;
   user_id: string;
+  intent?: string;
 }

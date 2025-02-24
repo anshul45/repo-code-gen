@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import type { ChatRequest } from '@/types/agent';
 
 export async function POST(req: NextRequest) {
-  const { message, user_id } = await req.json() as ChatRequest;
+  const { message, user_id, intent } = await req.json() as ChatRequest;
 
   try {
     const response = await fetch('http://localhost:8000/chat', {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, user_id }),
+      body: JSON.stringify({ message, user_id, intent }),
     });
 
     if (!response.ok) {
