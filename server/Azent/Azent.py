@@ -4,7 +4,7 @@ from openai import AzureOpenAI, OpenAI
 from dotenv import load_dotenv
 from anthropic import Anthropic
 
-from server.tools.redis_cache import RedisCache
+from tools.redis_cache import RedisCache
 
 load_dotenv()
 

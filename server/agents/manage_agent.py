@@ -3,9 +3,9 @@ from typing import Dict
 from dotenv import load_dotenv
 import json
 
-from server.Azent.Azent import Agent
-from server.cache.cache import RedisCache
-from server.tools import get_files_with_description
+from Azent.Azent import Agent
+from cache.cache import RedisCache
+from tools import get_files_with_description
 
 
 class ManagerAgent:
