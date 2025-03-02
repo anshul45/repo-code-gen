@@ -67,6 +67,7 @@ export function Chat() {
       }
 
       const data = await response.json();
+
       
       if (data.error) {
         throw new Error(data.error);
