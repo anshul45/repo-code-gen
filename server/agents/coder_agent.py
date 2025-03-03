@@ -1,6 +1,6 @@
 import os
 
-from server.Azent.Azent import Agent
+from Azent.Azent import Agent
 
 
 class CoderAgent:

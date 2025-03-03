@@ -1,6 +1,6 @@
 import os
 
-from server.Azent import SimpleAgent
+from Azent import SimpleAgent
 
 
 def get_files_with_description(problem_statement: str):
