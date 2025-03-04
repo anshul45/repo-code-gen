@@ -1,8 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, RefObject } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { WebContainer } from "@webcontainer/api";
+import { bootWebContainer } from "@/lib/webContainer";
+import {files} from "@/common/next_template";
+import FileExplorer from './FileExplorer';
+import CodeEditor from './CodeEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+
 
 interface ChatMessage {
   role: 'assistant' | 'user' | 'tool';
@@ -30,6 +38,13 @@ export function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [activeFile,setActiveFile] = useState<any>()
+
+  console.log(iframeRef)
+
+
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -90,6 +105,19 @@ export function Chat() {
     }
   };
 
+
+  useEffect(() => {
+    const initialize = async () => {
+      if (!webcontainer) {
+        const instance = await bootWebContainer(files, iframeRef as RefObject<HTMLIFrameElement>);
+        setWebcontainer(instance);
+      }
+    };
+
+    initialize();
+  }, [webcontainer]);
+  
+
   return (
     <div className="flex h-[92.5vh]">
       {/* Sidebar for Message List */}
@@ -99,7 +127,7 @@ export function Chat() {
         {messages.map((msg, index) => (
           <div 
             key={index} 
-            className={`p-2 cursor-pointer ${selectedMessage === msg ? 'bg-blue-300' : 'hover:bg-gray-300'}`}
+            className={`p-2 cuiframeRefrsor-pointer ${selectedMessage === msg ? 'bg-blue-300' : 'hover:bg-gray-300'}`}
             onClick={() => setSelectedMessage(msg)}
           >
             {msg.role === 'user' ? 'You' : 'AI'}: {msg.content?.substring(0, 30)}...
@@ -282,24 +310,49 @@ export function Chat() {
           </form>
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
-      </div>
+      </div> 
 
-      {/* Code Display Section */}
-      <div className="w-2/5 border-l border-gray-200 overflow-y-auto">
-        <div className="p-4">
-          <h3 className="text-lg font-semibold mb-4">Generated Code</h3>
-          {selectedMessage?.currentFile && selectedMessage?.generatedFiles?.[selectedMessage.currentFile] ? (
-            <>
-              <div className="mb-2 text-sm text-gray-600">{selectedMessage.currentFile}</div>
-              <pre className="p-4 bg-gray-100 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
-                {selectedMessage.generatedFiles[selectedMessage.currentFile]}
-              </pre>
-            </>
-          ) : (
-            <p className="text-gray-500">Select a file to view its generated code</p>
-          )}
-        </div>
-      </div>
+      <Tabs defaultValue="account" className="w-[700px]">
+  <TabsList>
+    <TabsTrigger value="code">Code</TabsTrigger>
+    <TabsTrigger value="preview">Preview</TabsTrigger>
+  </TabsList>
+  <TabsContent value="code">
+  <div className="flex">
+      <FileExplorer setActiveFile={setActiveFile}/>
+      <CodeEditor data={activeFile}/>
+      </div> 
+  </TabsContent>
+  <TabsContent value="preview">
+  {iframeRef ? (
+    <iframe
+      ref={iframeRef}
+      title="WebContainer"
+      width={600}
+      height={500}
+      key={Date.now()} 
+    />
+  ) : (
+    <div>Loading...</div>
+  )}
+</TabsContent>
+</Tabs>
     </div>
   );
 }
+
+{/* <div className="w-2/5 border-l border-gray-200 overflow-y-auto">
+  <div className="p-4">
+    <h3 className="text-lg font-semibold mb-4">Generated Code</h3>
+    {selectedMessage?.currentFile && selectedMessage?.generatedFiles?.[selectedMessage.currentFile] ? (
+      <>
+        <div className="mb-2 text-sm text-gray-600">{selectedMessage.currentFile}</div>
+        <pre className="p-4 bg-gray-100 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
+          {selectedMessage.generatedFiles[selectedMessage.currentFile]}
+        </pre>
+      </>
+    ) : (
+      <p className="text-gray-500">Select a file to view its generated code</p>
+    )}
+  </div>
+</div> */}

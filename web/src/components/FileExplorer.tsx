@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import files from "../common/file"
+import {files} from "@/common/next_template"
 
 const FileNode = ({ node, path = "", setActiveFile }: { node: any; path: string; setActiveFile: any }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -55,7 +55,7 @@ const FileNode = ({ node, path = "", setActiveFile }: { node: any; path: string;
 
 const FileExplorer = ({ setActiveFile }: any) => {
   return (
-    <div className="bg-gray-50 rounded-md shadow-lg h-[83vh] border-r-[1px]">
+    <div className="bg-gray-50 rounded-md shadow-lg h-[85.1vh] w-64 border-r-[1px]">
       <h1 className="text-base border-b-[1px] pl-1 font-semibold py-0.5">Files</h1>
       <div className="pl-2">
       <FileNode path="" setActiveFile={setActiveFile} node={files} />
