@@ -1,6 +1,6 @@
 import { WebContainer } from "@webcontainer/api";
 
-export const bootWebContainer = async (files: any, iframeRef: React.RefObject<HTMLIFrameElement>) => {
+export const bootWebContainer = async (files: any, iframeRef: React.RefObject<HTMLIFrameElement>,setIsLoadingPreview:any) => {
   console.log("Booting WebContainer...");
 
   try {
@@ -30,6 +30,7 @@ export const bootWebContainer = async (files: any, iframeRef: React.RefObject<HT
     webcontainerInstance.on("server-ready", (port, url) => {
       console.log("Server Ready:", url);
       if (iframeRef.current) {
+        setIsLoadingPreview(false);
         iframeRef.current.src = url;
       }
     });

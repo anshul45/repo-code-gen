@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { WebContainer } from "@webcontainer/api";
 import { bootWebContainer } from "@/lib/webContainer";
-import {files} from "@/common/next_template";
+import { files } from "@/common/next_template";
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -40,11 +40,9 @@ export function Chat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [activeFile,setActiveFile] = useState<any>()
-
-  console.log(iframeRef)
-
-
+  const [activeFile, setActiveFile] = useState<any>()
+  const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+  const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true)
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -71,9 +69,9 @@ export function Chat() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: input, 
-          user_id: userId 
+        body: JSON.stringify({
+          message: input,
+          user_id: userId
         }),
       });
 
@@ -83,7 +81,7 @@ export function Chat() {
 
       const data = await response.json();
 
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
@@ -91,7 +89,7 @@ export function Chat() {
       if (data.result) {
         // Add new messages to the list
         setMessages(prev => [...prev, ...data.result]);
-        
+
         // Select the latest message
         if (data.result.length > 0) {
           setSelectedMessage(data.result[data.result.length - 1]);
@@ -109,24 +107,24 @@ export function Chat() {
   useEffect(() => {
     const initialize = async () => {
       if (!webcontainer) {
-        const instance = await bootWebContainer(files, iframeRef as RefObject<HTMLIFrameElement>);
+        const instance = await bootWebContainer(files, iframeRef as RefObject<HTMLIFrameElement>, setIsLoadingPreview);
         setWebcontainer(instance);
       }
     };
 
     initialize();
   }, [webcontainer]);
-  
+
 
   return (
     <div className="flex h-[92.5vh]">
       {/* Sidebar for Message List */}
-      <div className="w-1/5 bg-gray-200 p-4 overflow-y-auto" style={{scrollbarWidth:"thin"}}>
+      <div className="w-1/5 bg-gray-200 p-4 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
         <h3 className="text-lg font-semibold mb-2">Messages</h3>
         {messages.length === 0 && <p className="text-gray-500">No messages yet</p>}
         {messages.map((msg, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className={`p-2 cuiframeRefrsor-pointer ${selectedMessage === msg ? 'bg-blue-300' : 'hover:bg-gray-300'}`}
             onClick={() => setSelectedMessage(msg)}
           >
@@ -138,7 +136,7 @@ export function Chat() {
 
       {/* Message Content Section */}
       <div className="w-2/5 flex flex-col h-[92.5vh]">
-        <div className="flex-1 p-4 overflow-y-auto" style={{scrollbarWidth:"thin"}}>
+        <div className="flex-1 p-4 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
           {selectedMessage ? (
             <>
               <h3 className="text-lg font-semibold">
@@ -174,10 +172,9 @@ export function Chat() {
                           return files.map((file) => (
                             <div key={file.file_path} className="mt-4">
                               <div className="flex items-center gap-2">
-                                <span 
-                                  className={`font-semibold cursor-pointer ${
-                                    selectedMessage.generatedFiles?.[file.file_path] ? 'text-blue-600 hover:text-blue-800' : ''
-                                  }`}
+                                <span
+                                  className={`font-semibold cursor-pointer ${selectedMessage.generatedFiles?.[file.file_path] ? 'text-blue-600 hover:text-blue-800' : ''
+                                    }`}
                                   onClick={() => {
                                     if (selectedMessage.generatedFiles?.[file.file_path]) {
                                       setSelectedMessage(prev => prev ? {
@@ -213,13 +210,13 @@ export function Chat() {
                           try {
                             setIsGenerating(true);
                             const files = JSON.parse(selectedMessage.content) as FileInfo[];
-                            
+
                             // Initialize generatedFiles if it doesn't exist
                             setSelectedMessage(prev => prev ? {
                               ...prev,
                               generatedFiles: prev.generatedFiles || {}
                             } : null);
-                            
+
                             for (const file of files) {
                               // Update status to generating for current file
                               setSelectedMessage(prev => prev ? {
@@ -243,7 +240,7 @@ export function Chat() {
                               }
 
                               const data = await response.json();
-                              
+
                               if (data.error) {
                                 throw new Error(data.error);
                               }
@@ -279,8 +276,8 @@ export function Chat() {
                     </div>
                   </div>
                 ) : (
-                  typeof selectedMessage.content === 'string' 
-                    ? selectedMessage.content 
+                  typeof selectedMessage.content === 'string'
+                    ? selectedMessage.content
                     : JSON.stringify(selectedMessage.content, null, 2)
                 )}
               </div>
@@ -300,8 +297,8 @@ export function Chat() {
               disabled={isLoading}
               className="flex-1"
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="min-w-[80px]"
             >
@@ -310,33 +307,55 @@ export function Chat() {
           </form>
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
-      </div> 
+      </div>
 
-      <Tabs defaultValue="account" className="w-[700px]">
-  <TabsList>
-    <TabsTrigger value="code">Code</TabsTrigger>
-    <TabsTrigger value="preview">Preview</TabsTrigger>
-  </TabsList>
-  <TabsContent value="code">
-  <div className="flex">
-      <FileExplorer setActiveFile={setActiveFile}/>
-      <CodeEditor data={activeFile}/>
-      </div> 
-  </TabsContent>
-  <TabsContent value="preview">
-  {iframeRef ? (
-    <iframe
-      ref={iframeRef}
-      title="WebContainer"
-      width={600}
-      height={500}
-      key={Date.now()} 
-    />
-  ) : (
-    <div>Loading...</div>
-  )}
-</TabsContent>
-</Tabs>
+      {/* Custom Tabs*/}
+      <div className="w-[700px]">
+        <div className="flex bg-gray-100 rounded-lg w-fit px-1 py-1.5">
+          <button
+            className={`rounded-lg px-3 py-1 ${activeTab === "code" ? "bg-white" : ""}`}
+            onClick={() => setActiveTab("code")}
+          >
+            Code
+          </button>
+          <button
+            className={`rounded-lg px-3 py-1 ${activeTab === "preview" ? "bg-white" : ""}`}
+            onClick={() => setActiveTab("preview")}
+          >
+            Preview
+          </button>
+        </div>
+
+
+        <div className="py-2">
+          {/* Code Editor */}
+          <div className={activeTab === "code" ? "block" : "hidden"}>
+            <div className="flex">
+              <div className='flex-[0.3]'>
+                <FileExplorer setActiveFile={setActiveFile} />
+              </div>
+              <div className='flex-[0.7]'>
+                <CodeEditor data={activeFile} />
+              </div>
+            </div>
+          </div>
+
+          {/* Preview  */}
+          <div className={activeTab === "preview" ? "block w-full" : "hidden"}>
+            {/* {isLoadingPreview ? (
+              <div>Loading.......</div>
+            ) : ( */}
+              <iframe
+                ref={iframeRef}
+                title="WebContainer"
+                width={596}
+                height={480}
+              />
+            {/* )} */}
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

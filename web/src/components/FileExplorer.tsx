@@ -55,7 +55,7 @@ const FileNode = ({ node, path = "", setActiveFile }: { node: any; path: string;
 
 const FileExplorer = ({ setActiveFile }: any) => {
   return (
-    <div className="bg-gray-50 rounded-md shadow-lg h-[85.1vh] w-64 border-r-[1px]">
+    <div className="bg-gray-50 rounded-md shadow-lg h-[82.4vh] w-full border-r-[1px]">
       <h1 className="text-base border-b-[1px] pl-1 font-semibold py-0.5">Files</h1>
       <div className="pl-2">
       <FileNode path="" setActiveFile={setActiveFile} node={files} />
