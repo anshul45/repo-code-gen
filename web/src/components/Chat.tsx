@@ -8,7 +8,6 @@ import { bootWebContainer } from "@/lib/webContainer";
 import { files } from "@/common/next_template";
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
 
@@ -43,6 +42,7 @@ export function Chat() {
   const [activeFile, setActiveFile] = useState<any>()
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true)
+
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -342,16 +342,19 @@ export function Chat() {
 
           {/* Preview  */}
           <div className={activeTab === "preview" ? "block w-full" : "hidden"}>
-            {/* {isLoadingPreview ? (
-              <div>Loading.......</div>
-            ) : ( */}
+          {isLoadingPreview ? (
+              <div className="flex items-center justify-center h-60 text-gray-500">
+                Loading preview...
+              </div>
+            ) : (
               <iframe
                 ref={iframeRef}
                 title="WebContainer"
                 width={596}
                 height={480}
+                className=""
               />
-            {/* )} */}
+            )}
           </div>
         </div>
       </div>
