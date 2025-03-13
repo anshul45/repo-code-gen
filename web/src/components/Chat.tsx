@@ -33,10 +33,12 @@ export function Chat() {
   return (
     <div className="flex h-[92.5vh]">
       {/* Message Content Section */}
+      <div className='flex-[3.5]'>
     <ChatPreview/>
+      </div>
 
       {/* Custom Tabs*/}
-      <div className="w-[700px]">
+      <div className="flex-[6.5]">
         <div className="flex bg-gray-100 rounded-lg w-fit px-1 py-1.5">
           <button
             className={`rounded-lg px-3 py-1 ${activeTab === "code" ? "bg-white" : ""}`}
