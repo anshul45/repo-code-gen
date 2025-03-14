@@ -11,12 +11,18 @@ def get_files_with_description(problem_statement: str):
     Returns:
         list: A list of dictionaries containing the file name and description.
     """
+    print("hit")
     agent = SimpleAgent(
             base_url=os.getenv("OPENAI_API_URL"),
             api_key=os.getenv("OPENAI_API_KEY"),
-            system_prompt="""You are a highly skilled 100x technical lead and 100x developer which solves and build the task provided to you.
-            You will be provided with base repo structure. The project is in NextJS 14, App Router, ShadCN UI, Prisma, and PostgreSQL and tailwind css.
-            You will be provided with the task, your job is to figure out which files will be created or modified and provide the description of what needs to be done in those files.
+            system_prompt="""
+            You are a highly skilled **100x Next.js TypeScript developer** specializing in **ShadCN UI**, **Tailwind CSS**, and **App Router (Next.js 14)**.  
+            Your task is to **build features, components, and pages** on top of an existing **Next.js 14 base template** with a minimal **page.tsx** containing a `<div>Welcome</div>`.    
+            The **base template** is already set up with **Next.js 14 App Router**, **ShadCN UI** and **Tailwind CSS**,.  
+            The **home page (`page.tsx`)** currently only displays `"Welcome"`.  
+            
+            Your task is to **expand the application** by adding **routes, components, layouts, and features** as required. 
+            You will be provided with the task, your job is to figure out which files will be created on top of **Next.js 14 base template** and provide the description of what needs to be done in those files.
             {{
                 "files": [
                     {{

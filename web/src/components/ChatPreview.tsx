@@ -33,7 +33,7 @@ const ChatPreview = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const isChat = useChatStore();
+    const {isChatsOpen} = useChatStore();
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -94,8 +94,7 @@ const ChatPreview = () => {
       };
 
 
-      const generateCode = async() =>{
-        async () => {
+      const generateCode = async () => {
           try {
             setIsGenerating(true);
             const files = JSON.parse(selectedMessage?.content) as FileInfo[];
@@ -157,15 +156,14 @@ const ChatPreview = () => {
           } finally {
             setIsGenerating(false);
         }
-        }}
+        }
       
 
-      console.log(messages)
 
 
   return (
     <div className='w-full flex'>
-      {isChat.isChatsOpen &&
+      {isChatsOpen &&
     <ChatHistory messages={messages} selectedMessage={selectedMessage} setSelectedMessage={setSelectedMessage} scrollRef={scrollRef}/>
     }
     <div className="w-full flex flex-col h-[92.5vh]">

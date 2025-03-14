@@ -10,7 +10,7 @@ const ChatHistory = ({
   const isChat = useChatStore();
   return (
     <div
-      className=" bg-gray-200 p-4 overflow-y-auto h-[92.6vh] absolute w-56"
+      className=" bg-gray-200 p-4 overflow-y-auto h-[92.6vh] absolute w-56 left-0"
       style={{ scrollbarWidth: "thin" }}
       onMouseLeave={() => isChat.toggleChats()}
     >

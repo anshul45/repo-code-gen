@@ -43,7 +43,9 @@ export const bootWebContainer = async (
     
     setIsLoadingPreview(false); 
 
-
+    webcontainerInstance.fs.watch("/", async (event, filename) => {
+      console.log("File Changed:", filename);
+    });
     
     webcontainerInstance.on("server-ready", (port, url) => {
       console.log("Server Ready:", url);

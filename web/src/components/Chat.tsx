@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef, RefObject } from 'react';
 import { WebContainer } from "@webcontainer/api";
 import { bootWebContainer } from "@/lib/webContainer";
-import { files } from "@/common/next_template";
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import ChatPreview from './ChatPreview';
+import { useFileStore } from '@/store/fileStore';
 
 export function Chat() {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
@@ -14,8 +14,15 @@ export function Chat() {
   const [activeFile, setActiveFile] = useState<any>()
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true)
+  const {files,fileChanges} = useFileStore()
 
-  // Auto-scroll when new messages arrive
+
+  const writeFileToWebContainer = async (path: string, content: string) => {
+    console.log("hit")
+    if (!webcontainer) return;
+    console.log("path",path)
+    await webcontainer.fs.writeFile(path, content);
+  };
   
 
   useEffect(() => {
@@ -23,11 +30,24 @@ export function Chat() {
       if (!webcontainer) {
         const instance = await bootWebContainer(files, iframeRef as RefObject<HTMLIFrameElement>, setIsLoadingPreview);
         setWebcontainer(instance);
+
+        if(instance)
+         instance.fs.watch("/", async (event, filename) => {
+          console.log("File changed:", filename);
+        });
       }
-    };
+      }
+    
 
     initialize();
   }, [webcontainer]);
+
+
+  useEffect(() => {
+    if (fileChanges && fileChanges.filename && fileChanges.content) {
+      writeFileToWebContainer(fileChanges.filename, fileChanges.content);
+    }
+  }, [fileChanges]);
 
 
   return (
@@ -78,9 +98,10 @@ export function Chat() {
               <iframe
                 ref={iframeRef}
                 title="WebContainer"
-                width={596}
+                width={779}
                 height={480}
-                className=""
+                className="bg-red"
+
               />
             )}
           </div>

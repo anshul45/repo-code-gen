@@ -19,6 +19,12 @@ app.add_middleware(
 
 manager_agent = ManagerAgent()
 
+@app.get("/")
+def health():
+    return {
+    "result":"Server running!"
+    }   
+
 @app.post("/chat")
 async def chat(request: Request) -> Dict:
     data = await request.json()
