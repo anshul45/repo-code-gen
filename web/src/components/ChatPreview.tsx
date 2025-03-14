@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ChatHistory from './ChatHistory';
+import { useChatStore } from "@/store/toggle";
 
 
 interface ChatMessage {
@@ -32,6 +33,7 @@ const ChatPreview = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const {isChatsOpen} = useChatStore();
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -90,12 +92,81 @@ const ChatPreview = () => {
           setIsLoading(false);
         }
       };
-    
+
+
+      const generateCode = async () => {
+          try {
+            setIsGenerating(true);
+            const files = JSON.parse(selectedMessage?.content) as FileInfo[];
+
+            // Initialize generatedFiles if it doesn't exist
+            setSelectedMessage(prev => prev ? {
+              ...prev,
+              generatedFiles: prev.generatedFiles || {}
+            } : null);
+
+            for (const file of files) {
+              // Update status to generating for current file
+              setSelectedMessage(prev => prev ? {
+                ...prev,
+                status: 'generating',
+                currentFile: file.file_path
+              } : null);
+
+              const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: `Generate ${file.file_path}`,
+                  user_id: localStorage.getItem('chatUserId'),
+                  intent: 'code'
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to generate ${file.file_path}`);
+              }
+
+              const data = await response.json();
+
+              if (data.error) {
+                throw new Error(data.error);
+              }
+
+              // Update generated files with the new content
+              setSelectedMessage(prev => {
+                if (!prev) return null;
+                const newGeneratedFiles = {
+                  ...prev.generatedFiles,
+                  [file.file_path]: data.result[0]?.content || `Generated ${file.file_path}`
+                };
+                return {
+                  ...prev,
+                  status: 'completed',
+                  generatedFiles: newGeneratedFiles
+                };
+              });
+            }
+          } catch (error) {
+            console.error('Error generating files:', error);
+            setSelectedMessage(prev => prev ? {
+              ...prev,
+              status: 'error'
+            } : null);
+          } finally {
+            setIsGenerating(false);
+        }
+        }
+      
+
+
 
   return (
-    <>
+    <div className='w-full flex'>
+      {isChatsOpen &&
     <ChatHistory messages={messages} selectedMessage={selectedMessage} setSelectedMessage={setSelectedMessage} scrollRef={scrollRef}/>
-    <div className="w-2/5 flex flex-col h-[92.5vh]">
+    }
+    <div className="w-full flex flex-col h-[92.5vh]">
     <div className="flex-1 p-4 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
       {selectedMessage ? (
         <>
@@ -166,70 +237,7 @@ const ChatPreview = () => {
                 </div>
                 <div className="mt-6 flex justify-end">
                   <Button
-                    onClick={async () => {
-                      try {
-                        setIsGenerating(true);
-                        const files = JSON.parse(selectedMessage.content) as FileInfo[];
-
-                        // Initialize generatedFiles if it doesn't exist
-                        setSelectedMessage(prev => prev ? {
-                          ...prev,
-                          generatedFiles: prev.generatedFiles || {}
-                        } : null);
-
-                        for (const file of files) {
-                          // Update status to generating for current file
-                          setSelectedMessage(prev => prev ? {
-                            ...prev,
-                            status: 'generating',
-                            currentFile: file.file_path
-                          } : null);
-
-                          const response = await fetch('/api/chat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              message: `Generate ${file.file_path}`,
-                              user_id: localStorage.getItem('chatUserId'),
-                              intent: 'code'
-                            }),
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`Failed to generate ${file.file_path}`);
-                          }
-
-                          const data = await response.json();
-
-                          if (data.error) {
-                            throw new Error(data.error);
-                          }
-
-                          // Update generated files with the new content
-                          setSelectedMessage(prev => {
-                            if (!prev) return null;
-                            const newGeneratedFiles = {
-                              ...prev.generatedFiles,
-                              [file.file_path]: data.result[0]?.content || `Generated ${file.file_path}`
-                            };
-                            return {
-                              ...prev,
-                              status: 'completed',
-                              generatedFiles: newGeneratedFiles
-                            };
-                          });
-                        }
-                      } catch (error) {
-                        console.error('Error generating files:', error);
-                        setSelectedMessage(prev => prev ? {
-                          ...prev,
-                          status: 'error'
-                        } : null);
-                      } finally {
-                        setIsGenerating(false);
-                    }
-                    }}
-                    disabled={isGenerating}
+                    onClick={generateCode}
                   >
                     {isGenerating ? 'Generating...' : 'Continue with Generation'}
                   </Button>
@@ -268,7 +276,7 @@ const ChatPreview = () => {
       {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   </div>
-          </>
+          </div>
   )
 }
 
