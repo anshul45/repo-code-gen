@@ -51,23 +51,23 @@ export function Chat() {
 
 
   return (
-    <div className="flex h-[92.5vh]">
+    <div className="flex h-[calc(100vh-73px)] gap-4">
       {/* Message Content Section */}
       <div className='flex-[3.5]'>
     <ChatPreview/>
       </div>
 
       {/* Custom Tabs*/}
-      <div className="flex-[6.5]">
-        <div className="flex bg-gray-100 rounded-lg w-fit px-1 py-1.5">
+      <div className="flex-[6.5] border-[1px] rounded-md">
+        <div className="flex bg-gray-100 px-1 py-1 rounded-3xl w-fit my-2 ml-2">
           <button
-            className={`rounded-lg px-3 py-1 ${activeTab === "code" ? "bg-white" : ""}`}
+            className={`rounded-3xl px-2 py-0.5 text-sm ${activeTab === "code" ? "bg-white" : ""}`}
             onClick={() => setActiveTab("code")}
           >
             Code
           </button>
           <button
-            className={`rounded-lg px-3 py-1 ${activeTab === "preview" ? "bg-white" : ""}`}
+            className={`rounded-3xl px-2 py-0.5 text-sm ${activeTab === "preview" ? "bg-white" : ""}`}
             onClick={() => setActiveTab("preview")}
           >
             Preview
@@ -75,21 +75,21 @@ export function Chat() {
         </div>
 
 
-        <div className="py-2">
+        <div className="">
           {/* Code Editor */}
           <div className={activeTab === "code" ? "block" : "hidden"}>
             <div className="flex">
-              <div className='flex-[0.3]'>
+              <div className='flex-[0.2]'>
                 <FileExplorer setActiveFile={setActiveFile} />
               </div>
-              <div className='flex-[0.7]'>
+              <div className='flex-[0.8]'>
                 <CodeEditor data={activeFile} />
               </div>
             </div>
           </div>
 
           {/* Preview  */}
-          <div className={activeTab === "preview" ? "block w-full" : "hidden"}>
+          <div className={activeTab === "preview" ? "block w-full border-t-[1px]" : "hidden"}>
           {isLoadingPreview ? (
               <div className="flex items-center justify-center h-60 text-gray-500">
                 Loading preview...
@@ -98,9 +98,9 @@ export function Chat() {
               <iframe
                 ref={iframeRef}
                 title="WebContainer"
-                width={779}
-                height={480}
-                className="bg-red"
+                width={765}
+                height={465}
+                className='rounded-b-md'
 
               />
             )}

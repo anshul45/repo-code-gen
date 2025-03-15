@@ -5,7 +5,7 @@ import { Chat } from "@/components/Chat";
 export default function Home() {
  
   return (
-    <main className="">
+    <main className="py-4 px-2">
       <Chat />
     </main>
   );
