@@ -138,9 +138,16 @@ class Agent:
                     message = self.client.messages.create(
                         model='claude-3-5-sonnet-latest',
                         max_tokens=1024,
-                        messages=self.thread[1:],
-                        system=self.thread[0]['content'] if self.thread else ''
+                        messages=[
+                                {
+                                    "role": "user",
+                                    "content": query
+                                }
+                            ],
+                        system=self.instructions
                     ).content[0].text
+                    self.thread.append({"role": "assistant", "content": json.dumps({"message": message, "type": "code"})})
+                    self.overall_thread.append({"role": "assistant", "content": json.dumps({"message": message, "type": "code"})})
 
                 else:
                     response = self.client.chat.completions.create(
@@ -151,8 +158,8 @@ class Agent:
                     )
                     message = response.choices[0].message.content
 
-                self.thread.append({"role": "assistant", "content": str(message)})
-                self.overall_thread.append({"role": "assistant", "content": str(message)})
+                    self.thread.append({"role": "assistant", "content": str(message)})
+                    self.overall_thread.append({"role": "assistant", "content": str(message)})
                 self.save_thread()
                 return self.overall_thread
 

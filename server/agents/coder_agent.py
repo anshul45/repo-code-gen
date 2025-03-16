@@ -28,19 +28,40 @@ class CoderAgent:
                     [base_template]
                     {{base_template}}
 
-                    Structure of the output in JSON format like this for a UI page:
-                    <code>
-                        <file_name>app/directory/todo/directory/todo.tsx </file_name>
-                        <code> </code>
-                        <description> </description>
-                    </code>
+                    Structure of the output in JSON format like this for a UI page and don't add any other text:
+                    {{
+                        "app": {{
+                            "directory": {{
+                                "todo": {{
+                                    "directory": {{
+                                        "todo.tsx": {{
+                                            "file": {{
+                                                "contents": "import * as React from 'react';"
+                                            }}
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }}
                     
                     OR for a API file:
-                    <code>
-                        <file_name>app/api/directory/chat/directory/route.ts </file_name>
-                        <code> </code>
-                        <description> </description>
-                    </code>
+                    {{
+                        "app": {{
+                            "api": {{
+                                "directory": {{
+                                    "chat": {{
+                                        "directory": {{
+                                            "route.ts": {{
+                                                "file": {{
+                                                    "contents": "import * as React from 'react';"
+                                                }}
+                                            }}
+                                        }}
+                                    }}
+                                }}}}
+                        }}
+                    }}
                     '''.replace('{base_template}', json.dumps(base_template)),
                 base_url="https://api.anthropic.com/v1/messages",
                 api_key=os.getenv('ANTHROPIC_API_KEY'),

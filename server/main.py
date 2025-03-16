@@ -58,13 +58,25 @@ async def chat(request: Request) -> Dict:
                     result[-1]['content'] = json_response
                 except json.JSONDecodeError as e:
                     print(f"JSON parsing error: {str(e)}")
-            
-            elif last_message.get('type') == "code" and last_message.get('content'):
+
+            # elif last_message.get('type') == "json-files" and last_message.get('content'):
+            #     try:
+            #         json_response = json.loads(last_message['content'])
+            #         result[-1]['content'] = json_response
+            #     except json.JSONDecodeError as e:
+            #         print(f"JSON parsing error: {str(e)}")
+
+            elif last_message and last_message.get('type') != "json-files":
                 try:
+
                     json_response = json.loads(last_message['content'])
-                    result[-1]['content'] = json_response
+
+                    if json_response.get('type') == "code" and json_response.get('message'):
+                        result[-1]['content'] = json_response['message']
+                        result[-1]['type'] = json_response['type']
                 except json.JSONDecodeError as e:
-                    print(f"JSON parsing error: {str(e)}")
+                    pass
+
 
         return {
             "result": result
