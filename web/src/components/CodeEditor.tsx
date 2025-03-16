@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import { useFileStore } from '@/store/fileStore';
 
 const CodeEditor = ({ data }: any) => {
-  const { updateFile,files } = useFileStore();
+  const { updateFile, files } = useFileStore();
 
   const language: string[] = data?.path?.split(".");
 
@@ -21,9 +21,14 @@ const CodeEditor = ({ data }: any) => {
         width="100%"
         defaultLanguage={language && language[language?.length - 1]}
         value={data?.content}
-        onChange={handleEditorChange} 
-        options={{ minimap: { enabled: false } }}
-        className=''
+        onChange={handleEditorChange}
+        options={{
+          minimap: { enabled: false },
+          scrollbar: {
+            verticalScrollbarSize: 6,
+            horizontalScrollbarSize: 6
+          }
+        }}
       />
     </div>
   );
