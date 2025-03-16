@@ -162,11 +162,11 @@ const ChatPreview = () => {
 
 
   return (
-    <div className='w-full flex'>
+    <div className='w-full flex h-[calc(100vh-60px)]'>
       {isChatsOpen &&
     <ChatHistory messages={messages} selectedMessage={selectedMessage} setSelectedMessage={setSelectedMessage} scrollRef={scrollRef}/>
     }
-    <div className="w-full flex flex-col h-[92.5vh]">
+    <div className="w-full flex flex-col">
     <div className="flex-1 p-4 overflow-y-auto" style={{ scrollbarWidth: "thin" }}>
       {selectedMessage ? (
         <>
@@ -178,14 +178,14 @@ const ChatPreview = () => {
             {selectedMessage.type === 'json-files' ? (
               <div>
                 <p>The following files will be added:</p>
-                <ul className="list-disc pl-6 mt-2">
+                <ul className=" mt-2 list-none">
                   {(() => {
                     try {
                       const files = JSON.parse(selectedMessage.content) as FileInfo[];
                       return files.map((file) => (
-                        <li key={file.file_path} className="mb-2">
-                          <span className="font-semibold">{file.file_path}</span>
-                          <p className="text-gray-600 text-sm mt-1">
+                        <li key={file.file_path} className="mb-2 bg-white rounded-md py-1 px-2 border-[1px]">
+                          <span className="font-semibold text-sm">{file.file_path}</span>
+                          <p className="text-gray-600 text-sm">
                             {file.description}
                           </p>
                         </li>
@@ -251,7 +251,7 @@ const ChatPreview = () => {
           </div>
         </>
       ) : (
-        <p className="text-gray-500">Select a message to view content</p>
+        <p className="text-gray-500 text-center text-lg">Select a message to view content</p>
     )}
     </div>
 

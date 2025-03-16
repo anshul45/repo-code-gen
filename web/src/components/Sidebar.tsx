@@ -6,7 +6,7 @@ const Sidebar = () => {
   const {toggleChats} = useChatStore();
   return (
     <div
-      className={` w-full h-[calc(100vh-45px)] flex align-bottom bg-red-200 `}
+      className={`w-full h-[calc(100vh-41px)] flex align-bottom bg-gray-50`}
       onMouseEnter={() => toggleChats()}
     >
       <div>.</div>

@@ -14,15 +14,16 @@ const CodeEditor = ({ data }: any) => {
   };
 
   return (
-    <div>
-      <div className='border-b-[1px] mb-2 py-0.5'> 📄 {data?.path}</div>
+    <div className='h-[calc(100vh-106px)]  border-t-[1px]'>
+      <div className='border-b-[1px] mb-2 py-1 pl-2 text-sm'> 📄 {data?.path}</div>
       <Editor
-        height="76.2vh"
+        height="88.5%"
         width="100%"
         defaultLanguage={language && language[language?.length - 1]}
         value={data?.content}
         onChange={handleEditorChange} 
         options={{ minimap: { enabled: false } }}
+        className=''
       />
     </div>
   );
