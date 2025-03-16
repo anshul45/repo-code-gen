@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Dict
 from dotenv import load_dotenv
@@ -18,6 +19,9 @@ class ManagerAgent:
 
     def get_or_create_agent(self, user_id: str) -> Agent:
         """Get existing agent or create new one for the user"""
+        with open('/Users/abhilasha/Documents/chatbots/code-gen-bot/server/tools/base_template.json') as f:
+            base_template = json.load(f)
+
         if user_id not in self.active_sessions:
             self.project_details = self.cache.get_project_details(user_id)
             print("project details", self.project_details)
@@ -25,20 +29,25 @@ class ManagerAgent:
 
             self.active_sessions[user_id] = Agent(
                 name='manager agent',
-                model="gpt-4o",
+                model="gemini-2.0-flash",
                 instructions=f'''
-                You are a highly skilled 100x software engineer which builds project in NextJS tech stack.
+                You are a highly skilled 100x software engineer which builds project in NextJS app router, typescript, tailwind, and Shadcn UI tech stack.
                 Ask any question if anything is not clear to build the nextjs project.
                 Your main task is to understand problem statement and call tool <get_files_with_description> to get a list of files and their descriptions for the project.
                 You will be provided with tools which you can use to build the task.
+                You are provided with base_template for base project structure setup which already exists. this is boilerplate code for the project which is in the json format.
+                
+                [base_template]
+                {{base_template}}
 
                 Available tools are:
                     - <get_files_with_description> : This tool will return the list of files which needs to be created or updated in the project.
-                ''',
+                '''.replace('{base_template}', json.dumps(base_template)),
                 session_id=user_id,
                 tools=[
                     get_files_with_description
-                ]
+                ],
+                client_type='gemini'
             )
         return self.active_sessions[user_id]
 
@@ -49,24 +58,6 @@ class ManagerAgent:
         try:
             thread = agent.run(user_input)
             return [msg for msg in thread if msg['role'] != 'system']
-
-
-            # Step 2: Generate and send each file one by one
-            # for file_info in file_list:
-            #     file_name = file_info["file"]
-            #     file_path = file_info["path"]
-            #     file_desc = file_info["description"]
-
-            #     # Generate file content
-            #     generated_code = agent.run(f"Write the full code for {file_name}. Description: {file_desc}. \
-            #         Ensure it is complete, formatted, and runnable.")
-
-            #     # Step 3: Send JSON response for the file
-            #     yield json.dumps({
-            #         "file": file_name,
-            #         "path": file_path,
-            #         "content": generated_code
-            #     }) + "\n"
 
         except Exception as e:
             print(f"Error generating files: {e}")
