@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ChatHistory from './ChatHistory';
 import { useChatStore } from "@/store/toggle";
+import { useFileStore } from '@/store/fileStore';
 
 
 interface ChatMessage {
@@ -34,6 +35,8 @@ const ChatPreview = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { isChatsOpen } = useChatStore();
+
+  const { updateFile, updateFileChanges } = useFileStore();
 
 
   useEffect(() => {
@@ -134,34 +137,34 @@ const ChatPreview = () => {
           throw new Error(data.error);
         }
 
-        const code = data?.result?.filter(dat  => dat.type === "code");
+        const code = data?.result?.filter(dat => dat.type === "code");
 
-        console.log(code);
+        function extractPathAndContent(obj: any, currentPath = ''): { path: string, contents: any }[] {
+          const result: { path: string, contents: any }[] = [];
 
-        function extractPathAndContent(obj:any, currentPath = ''):any {
-          const result = [];
-        
           for (const key in obj) {
             const value = obj[key];
-        
+
             if (key === 'file' && value.contents !== undefined) {
-              result.push({
-                path: currentPath,
-                content: value.contents
-              });
+              result.push({ path: currentPath, contents: value.contents });
             } else if (typeof value === 'object' && value !== null) {
               const newPath = key === 'directory' ? currentPath : (currentPath ? `${currentPath}/${key}` : key);
               result.push(...extractPathAndContent(value, newPath));
             }
           }
-        
+
           return result;
         }
-        
-        const code1 = code[0]?.content;
-        
-        console.log(extractPathAndContent(JSON.parse(code1)));
 
+
+        const code1 = code[code.length - 1]?.content; // Get only the last index data
+
+        console.log(code1)
+
+        const updatedData = extractPathAndContent(JSON.parse(code1));
+        updateFile(updatedData[0]?.path, updatedData[0]?.contents);
+        //@ts-ignore
+        updateFileChanges({filename:updatedData[0]?.path, content:updatedData[0]?.contents});
         // Update generated files with the new content
         setSelectedMessage(prev => {
           if (!prev) return null;

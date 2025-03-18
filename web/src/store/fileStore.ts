@@ -11,6 +11,11 @@ export const useFileStore = create<FileState>((set) => ({
   files: files,
   fileChanges: null,
 
+  updateFileChanges: (filename, content) =>
+    set(() => ({
+      fileChanges: { filename, content },
+    })),
+
   updateFile: (filename, content) =>
     set((state) => {
       const updatedFiles = JSON.parse(JSON.stringify(state.files)); 
