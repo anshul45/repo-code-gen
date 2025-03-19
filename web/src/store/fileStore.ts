@@ -52,29 +52,33 @@ export const useFileStore = create<FileState>((set) => ({
     addFile: (filename, content) =>
       set((state) => {
         const updatedFiles = JSON.parse(JSON.stringify(state.files));
-  
+    
         const addOrUpdateFile = (node: any, pathParts: string[]) => {
           if (!pathParts.length) return;
-  
+    
           const currentPart = pathParts[0];
-  
+    
           if (pathParts.length === 1) {
+            // If the file exists update its content
             if (node[currentPart]?.file) {
-              node[currentPart].file.contents = content; 
+              node[currentPart].file.contents = content;
             } else {
-              node[currentPart] = { file: { contents: content } }; 
+              // create a new file entry
+              node[currentPart] = { file: { contents: content } };
             }
           } else {
-            if (!node[currentPart]) {
+            // Ensure the current part is a directory before proceeding
+            if (!node[currentPart] || node[currentPart]?.file) {
               node[currentPart] = { directory: {} };
             }
             addOrUpdateFile(node[currentPart].directory, pathParts.slice(1));
           }
         };
-  
+    
         const pathParts = filename.split("/");
-  
+    
         if (pathParts.length === 1) {
+          // Handle files at the root level
           if (updatedFiles[pathParts[0]]?.file) {
             updatedFiles[pathParts[0]].file.contents = content;
           } else {
@@ -83,7 +87,8 @@ export const useFileStore = create<FileState>((set) => ({
         } else {
           addOrUpdateFile(updatedFiles, pathParts);
         }
-  
-        return { files: { ...updatedFiles }, fileChanges: { filename, content } };
+    
+        return { files: { ...updatedFiles } };
       }),
+    
 }));

@@ -39,12 +39,14 @@
       "contents": ""
     }
   },
-  "app": {
+  "src":{
     "directory": {
-      "globals.css": {
-        "file": {
-          "contents": ""
-        }
+    "app": {
+      "directory": {
+        "globals.css": {
+          "file": {
+            "contents": ""
+          }
       },
       "layout.tsx": {
         "file": {
@@ -273,5 +275,7 @@
         }
       }
     }
+  }
+}
   }
 }

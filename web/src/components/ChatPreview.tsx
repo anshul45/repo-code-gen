@@ -137,7 +137,7 @@ const ChatPreview = () => {
           throw new Error(data.error);
         }
 
-        const code = data?.result?.filter(dat => dat.type === "code");
+        const code = data?.result?.filter((data:any) => data.type === "code");
 
         function extractPathAndContent(obj: any, currentPath = ''): { path: string, contents: any }[] {
           const result: { path: string, contents: any }[] = [];
@@ -156,11 +156,10 @@ const ChatPreview = () => {
           return result;
         }
 
-        const code1 = code[code.length - 1]?.content; 
+        const latestCode = code[code.length - 1]?.content; 
 
-        const updatedData = extractPathAndContent(JSON.parse(code1));
 
-        console.log(updatedData)
+        const updatedData = extractPathAndContent(JSON.parse(latestCode));
         
         addFile(updatedData[0]?.path, updatedData[0]?.contents);
         // Update generated files with the new content
