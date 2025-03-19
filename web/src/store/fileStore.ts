@@ -11,6 +11,7 @@ interface FileState {
 export const useFileStore = create<FileState>((set) => ({
   files: files,
   fileChanges: null,
+  isMount:false,
 
   updateFile: (filename, content) =>
     set((state) => {
@@ -52,6 +53,7 @@ export const useFileStore = create<FileState>((set) => ({
     addFile: (filename, content) =>
       set((state) => {
         const updatedFiles = JSON.parse(JSON.stringify(state.files));
+        let fileChanged = null;
     
         const addOrUpdateFile = (node: any, pathParts: string[]) => {
           if (!pathParts.length) return;
@@ -62,6 +64,7 @@ export const useFileStore = create<FileState>((set) => ({
             // If the file exists update its content
             if (node[currentPart]?.file) {
               node[currentPart].file.contents = content;
+              fileChanged = { filename, content };
             } else {
               // create a new file entry
               node[currentPart] = { file: { contents: content } };
@@ -88,7 +91,7 @@ export const useFileStore = create<FileState>((set) => ({
           addOrUpdateFile(updatedFiles, pathParts);
         }
     
-        return { files: { ...updatedFiles } };
+        return { files: { ...updatedFiles },fileChanges: fileChanged, isMount: true  };
       }),
     
 }));

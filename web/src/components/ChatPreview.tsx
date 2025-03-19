@@ -158,6 +158,7 @@ const ChatPreview = () => {
 
         const latestCode = code[code.length - 1]?.content; 
 
+        console.log(latestCode)
 
         const updatedData = extractPathAndContent(JSON.parse(latestCode));
         

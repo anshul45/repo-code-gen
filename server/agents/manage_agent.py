@@ -31,7 +31,7 @@ class ManagerAgent:
                 name='manager agent',
                 model="gemini-2.0-flash",
                 instructions=f'''
-                You are a highly skilled 100x software engineer which builds project in NextJS app router, typescript, tailwind, and Shadcn UI tech stack.
+                You are a highly skilled 100x software engineer which builds project in NextJS app router, typescript, tailwind, and Radix UI tech stack.
                 Ask any question if anything is not clear to build the nextjs project.
                 Your main task is to understand problem statement and call tool <get_files_with_description> to get a list of files and their descriptions for the project.
                 You will be provided with tools which you can use to build the task.
