@@ -5,20 +5,16 @@ interface FileState {
   files: any;
   fileChanges: { filename: string; content: string } | null;
   updateFile: (filename: string, content: string) => void;
+  addFile: (filename: string, content: string) => void;
 }
 
 export const useFileStore = create<FileState>((set) => ({
   files: files,
   fileChanges: null,
 
-  updateFileChanges: (filename, content) =>
-    set(() => ({
-      fileChanges: { filename, content },
-    })),
-
   updateFile: (filename, content) =>
     set((state) => {
-      const updatedFiles = JSON.parse(JSON.stringify(state.files)); 
+      const updatedFiles = JSON.parse(JSON.stringify(state.files));
 
       const updateFileContent = (node: any, pathParts: string[]) => {
         if (!pathParts.length) return;
@@ -50,6 +46,44 @@ export const useFileStore = create<FileState>((set) => ({
         updateFileContent(updatedFiles, pathParts);
       }
 
-      return { files: {...updatedFiles},fileChanges: { filename, content } };
+      return { files: { ...updatedFiles }, fileChanges: { filename, content } };
     }),
+
+    addFile: (filename, content) =>
+      set((state) => {
+        const updatedFiles = JSON.parse(JSON.stringify(state.files));
+  
+        const addOrUpdateFile = (node: any, pathParts: string[]) => {
+          if (!pathParts.length) return;
+  
+          const currentPart = pathParts[0];
+  
+          if (pathParts.length === 1) {
+            if (node[currentPart]?.file) {
+              node[currentPart].file.contents = content; 
+            } else {
+              node[currentPart] = { file: { contents: content } }; 
+            }
+          } else {
+            if (!node[currentPart]) {
+              node[currentPart] = { directory: {} };
+            }
+            addOrUpdateFile(node[currentPart].directory, pathParts.slice(1));
+          }
+        };
+  
+        const pathParts = filename.split("/");
+  
+        if (pathParts.length === 1) {
+          if (updatedFiles[pathParts[0]]?.file) {
+            updatedFiles[pathParts[0]].file.contents = content;
+          } else {
+            updatedFiles[pathParts[0]] = { file: { contents: content } };
+          }
+        } else {
+          addOrUpdateFile(updatedFiles, pathParts);
+        }
+  
+        return { files: { ...updatedFiles }, fileChanges: { filename, content } };
+      }),
 }));
