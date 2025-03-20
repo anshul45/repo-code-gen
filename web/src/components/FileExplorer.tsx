@@ -63,7 +63,7 @@ const FileExplorer = ({ setActiveFile }: any) => {
   const {files} = useFileStore();
 
   useEffect(() => {
-   setActiveFile({ content: files["app"]["directory"]["page.tsx"]["file"]["contents"], path: "app/page.tsx" })
+   setActiveFile({ content: files["src"]["directory"]["app"]["directory"]["page.tsx"]["file"]["contents"], path: "app/page.tsx" })
   },[])
 
   return (

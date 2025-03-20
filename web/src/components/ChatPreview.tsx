@@ -36,7 +36,7 @@ const ChatPreview = () => {
   const [error, setError] = useState<string | null>(null);
   const { isChatsOpen } = useChatStore();
 
-  const { updateFile, updateFileChanges } = useFileStore();
+  const { addFile } = useFileStore();
 
 
   useEffect(() => {
@@ -137,7 +137,7 @@ const ChatPreview = () => {
           throw new Error(data.error);
         }
 
-        const code = data?.result?.filter(dat => dat.type === "code");
+        const code = data?.result?.filter((data:any) => data.type === "code");
 
         function extractPathAndContent(obj: any, currentPath = ''): { path: string, contents: any }[] {
           const result: { path: string, contents: any }[] = [];
@@ -156,15 +156,13 @@ const ChatPreview = () => {
           return result;
         }
 
+        const latestCode = code[code.length - 1]?.content; 
 
-        const code1 = code[code.length - 1]?.content; // Get only the last index data
+        console.log(latestCode)
 
-        console.log(code1)
-
-        const updatedData = extractPathAndContent(JSON.parse(code1));
-        updateFile(updatedData[0]?.path, updatedData[0]?.contents);
-        //@ts-ignore
-        updateFileChanges({filename:updatedData[0]?.path, content:updatedData[0]?.contents});
+        const updatedData = extractPathAndContent(JSON.parse(latestCode));
+        
+        addFile(updatedData[0]?.path, updatedData[0]?.contents);
         // Update generated files with the new content
         setSelectedMessage(prev => {
           if (!prev) return null;
