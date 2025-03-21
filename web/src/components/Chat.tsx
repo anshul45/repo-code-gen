@@ -14,7 +14,7 @@ export function Chat() {
   const [activeFile, setActiveFile] = useState<any>()
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true)
-  const {files,fileChanges} = useFileStore()
+  const {files,fileChanges,isMount,mountFile} = useFileStore()
 
 
   const writeFileToWebContainer = async (path: string, content: string) => {
@@ -48,6 +48,16 @@ export function Chat() {
       writeFileToWebContainer(fileChanges.filename, fileChanges.content);
     }
   }, [fileChanges]);
+
+
+  useEffect(() => {
+if(isMount && mountFile)
+{
+  webcontainer?.mount(JSON.parse(mountFile))
+}
+  },[isMount])
+
+  
 
 
   return (

@@ -6,13 +6,22 @@ interface FileState {
   fileChanges: { filename: string; content: string } | null;
   updateFile: (filename: string, content: string) => void;
   addFile: (filename: string, content: string) => void;
+  isMount : boolean
+  mountFile:any
+  updateMountFile :(file:any) => void;
 }
 
 export const useFileStore = create<FileState>((set) => ({
   files: files,
   fileChanges: null,
   isMount:false,
+  mountFile:null,
 
+  updateMountFile:(file) =>
+ set((state) => {
+  return { mountFile: file };
+ }),
+ 
   updateFile: (filename, content) =>
     set((state) => {
       const updatedFiles = JSON.parse(JSON.stringify(state.files));
@@ -54,7 +63,7 @@ export const useFileStore = create<FileState>((set) => ({
       set((state) => {
         const updatedFiles = JSON.parse(JSON.stringify(state.files));
         let fileChanged = null;
-    
+        let isNewFile = false;
         const addOrUpdateFile = (node: any, pathParts: string[]) => {
           if (!pathParts.length) return;
     
@@ -68,6 +77,7 @@ export const useFileStore = create<FileState>((set) => ({
             } else {
               // create a new file entry
               node[currentPart] = { file: { contents: content } };
+              isNewFile = true;
             }
           } else {
             // Ensure the current part is a directory before proceeding
@@ -91,7 +101,7 @@ export const useFileStore = create<FileState>((set) => ({
           addOrUpdateFile(updatedFiles, pathParts);
         }
     
-        return { files: { ...updatedFiles },fileChanges: fileChanged, isMount: true  };
+        return { files: { ...updatedFiles },fileChanges: fileChanged, isMount: isNewFile  };
       }),
     
 }));

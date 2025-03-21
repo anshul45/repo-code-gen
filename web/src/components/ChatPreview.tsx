@@ -36,7 +36,8 @@ const ChatPreview = () => {
   const [error, setError] = useState<string | null>(null);
   const { isChatsOpen } = useChatStore();
 
-  const { addFile } = useFileStore();
+  const { addFile,updateMountFile } = useFileStore();
+
 
 
   useEffect(() => {
@@ -158,7 +159,7 @@ const ChatPreview = () => {
 
         const latestCode = code[code.length - 1]?.content; 
 
-        console.log(latestCode)
+        updateMountFile(latestCode);
 
         const updatedData = extractPathAndContent(JSON.parse(latestCode));
         

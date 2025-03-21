@@ -44,39 +44,52 @@ class CoderAgent:
 
     For UI components/pages:
     {{
-        "src"{{    
-        "app": {{
-                "page.tsx": {{
-                    "file": {{
-                        "contents": "export default function Dashboard() {...}"
-                    }}
-                }},
-            }}
-            "components": {{
-                    "stats.tsx": {{
-                        "file": {{
-                            "contents": "export function StatsCard() {...}"
+        "src"{{ 
+            "directory":{{
+                "app": {{
+                    "directory":{{
+                            "page.tsx": {{
+                                     "file": {{
+                                            "contents": "export default function Dashboard() {...}"
+                                               }}
+                                         }},
+                               }}
+                          }}
+                "components": {{
+                    "directory":{{
+                            "stats.tsx": {{
+                                    "file": {{
+                                            "contents": "export function StatsCard() {...}"
+                                              }}
+                                         }}
+                                 }}
+                            }}
                         }}
-                    }}
-                }}
-             }}
-    }}
-
+            }}
+    }}  
     For API routes:
     {{  "src"{{
+        "directory":{{   
         "app": {{
+            "directory":{{   
             "api": {{
+                "directory":{{  
                 "chat": {{
+                    "directory":{{ 
                     "route.ts": {{
                         "file": {{
                             "contents": "export async function POST(req: Request) {...}"
                         }}
                     }}
+                    }}
                 }}
+                }}
+            }}
             }}
         }}
     }}
     }}
+        }}
 
     Important notes:
     - Only respond with valid JSON (no markdown)
