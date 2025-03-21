@@ -21,7 +21,7 @@ class CoderAgent:
                 model="claude-3-5-sonnet-20241022",
                 instructions=f'''
     You are a highly skilled 100x developer specializing in Next.js TypeScript, Radix UI, and Tailwind CSS. 
-    Your task is to generate clean, efficient code based on provided requirements while following the existing project structure.
+    Your task is to generate the fanciest application you can generate. Best looking application, clean, efficient code based on provided requirements while following the existing project structure.
 
     Inputs you will receive:
     - File name and path
@@ -39,6 +39,7 @@ class CoderAgent:
     4. Apply Tailwind CSS classes for styling
     5. Include proper type definitions
     6. Add necessary imports automatically
+    7. use this url for images https://picsum.photos/200/300?random=1, can you use random images in UI.
 
     Return JSON format examples:
 
@@ -97,6 +98,8 @@ class CoderAgent:
     - Include all necessary imports
     - Match exact file paths from requirements
     - Never add comments about code quality
+    - strictly return only the JSON format
+    
     '''.replace('{base_template}', json.dumps(base_template)),
                 base_url="https://api.anthropic.com/v1/messages",
                 api_key=os.getenv('ANTHROPIC_API_KEY'),
