@@ -61,12 +61,12 @@ if(isMount && mountFile)
 
 
   return (
-    <div className="flex h-[calc(100vh-73px)] gap-4">
+    <div className="flex h-[calc(100vh-60px)] gap-4">
       {/* Message Content Section */}
       <div className='flex-[3.5]'>
     <ChatPreview/>
       </div>
-
+   
       {/* Custom Tabs*/}
       <div className="flex-[6.5] border-[1px] rounded-md">
         <div className="flex bg-gray-100 px-1 py-1 rounded-3xl w-fit my-2 ml-2">
@@ -101,39 +101,22 @@ if(isMount && mountFile)
           {/* Preview  */}
           <div className={activeTab === "preview" ? "block w-full border-t-[1px]" : "hidden"}>
           {isLoadingPreview ? (
-              <div className="flex items-center justify-center h-60 text-gray-500">
+              <div className="flex items-center justify-center h-60 text-gray-500 w-full">
                 Loading preview...
               </div>
             ) : (
               <iframe
                 ref={iframeRef}
                 title="WebContainer"
-                width={765}
-                height={465}
+                width={718}
+                height={466}
                 className='rounded-b-md'
-
               />
             )}
           </div>
         </div>
       </div>
-
+            
     </div>
   );
 }
-
-{/* <div className="w-2/5 border-l border-gray-200 overflow-y-auto">
-  <div className="p-4">
-    <h3 className="text-lg font-semibold mb-4">Generated Code</h3>
-    {selectedMessage?.currentFile && selectedMessage?.generatedFiles?.[selectedMessage.currentFile] ? (
-      <>
-        <div className="mb-2 text-sm text-gray-600">{selectedMessage.currentFile}</div>
-        <pre className="p-4 bg-gray-100 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap">
-          {selectedMessage.generatedFiles[selectedMessage.currentFile]}
-        </pre>
-      </>
-    ) : (
-      <p className="text-gray-500">Select a file to view its generated code</p>
-    )}
-  </div>
-</div> */}
