@@ -20,9 +20,10 @@ const CodeEditor = ({ data }: any) => {
       <div className='border-b-[1px] mb-2 py-1 pl-2 text-sm'> 📄 {data?.path}</div>
       <Editor
         height="calc(100vh - 107px)"
-        width={open ? "400px":"100%"}
+        width={open ? "392px":"100%"}
         defaultLanguage={language && language[language?.length - 1]}
         value={data?.content}
+        theme="vs-light" 
         onChange={handleEditorChange}
         options={{
           minimap: { enabled: false },

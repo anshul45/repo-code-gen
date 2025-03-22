@@ -36,7 +36,6 @@ const ChatPreview = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isChatsOpen } = useChatStore();
 
   const { addFile, updateMountFile } = useFileStore();
 
@@ -207,7 +206,7 @@ const ChatPreview = () => {
             return <AiMessage key={idx} message={message?.content} />;
           }
           else {
-            return <ToolMessage key={idx} message={JSON.parse(message?.content)}/>
+            return <ToolMessage generateCode={generateCode} key={idx} message={JSON.parse(message?.content)}/>
           }
         }
       )}
