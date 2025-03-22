@@ -88,10 +88,10 @@ if(isMount && mountFile)
           {/* Code Editor */}
           <div className={activeTab === "code" ? "block" : "hidden"}>
             <div className={`w-full flex ${activeTab === "code" ? "block" : "hidden"}`}>
-              <div className='flex-[0.25]'>
+              <div className='flex-[0.2]'>
                 <FileExplorer setActiveFile={setActiveFile} />
               </div>
-              <div className='flex-[0.75]'>
+              <div className='flex-[0.8]'>
                 <CodeEditor data={activeFile} />
               </div>
             </div>
