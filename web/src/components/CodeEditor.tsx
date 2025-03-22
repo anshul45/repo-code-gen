@@ -24,6 +24,7 @@ const CodeEditor = ({ data }: any) => {
         onChange={handleEditorChange}
         options={{
           minimap: { enabled: false },
+          fontSize: 13,
           scrollbar: {
             verticalScrollbarSize: 6,
             horizontalScrollbarSize: 6
