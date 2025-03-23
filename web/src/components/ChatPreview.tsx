@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChatStore } from "@/store/toggle";
-import { useFileStore } from '@/store/fileStore';
 import InputBox from './chat/input-box';
 import UserMessage from './chat/UserMessage';
 import AiMessage from './chat/AiMessage';
@@ -34,8 +32,6 @@ const ChatPreview = () => {
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const { addFile, updateMountFile } = useFileStore();
 
 
   useEffect(() => {

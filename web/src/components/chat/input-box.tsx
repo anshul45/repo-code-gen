@@ -45,7 +45,7 @@ const InputBox: React.FC<InputBoxProps> = ({ input, setInput, isLoading, handleS
         placeholder="Type your message..."
         className="flex-1 resize-none overflow-hidden focus:outline-none focus:ring-0 border-none shadow-none bg-transparent dark:bg-transparent dark:text-white"
         style={{
-          maxHeight: '150px', // Limit the maximum height of the textarea
+          maxHeight: '150px', 
         }}
       />
       <Button

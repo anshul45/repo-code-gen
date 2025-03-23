@@ -23,7 +23,6 @@ export function Chat() {
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
 
   const appendTerminal = (msg: string) => {
-    // Check for ANSI clear codes or the clear command
     if (msg.includes("\x1Bc") || msg.includes("\x1B[2J")) {
       clearTerminal();
     } else {
@@ -32,7 +31,7 @@ export function Chat() {
   };
 
   const clearTerminal = () => {
-    setTerminalOutput([]); // Clear the terminal output
+    setTerminalOutput([]); 
   };
 
   const writeFileToWebContainer = async (path: string, content: string) => {
@@ -92,7 +91,7 @@ export function Chat() {
   }, [isMount]);
 
   return (
-    <div className="w-full flex h-[calc(100vh-20px)] px-4 py-4 gap-4 bg-gray-50 dark:bg-gray-900">
+    <div className="w-full  flex h-[calc(100vh-29px)] px-4 py-4 gap-4 bg-gray-100 dark:bg-gray-900">
       {/* Left: Chat Preview */}
       <div className='flex-[3.5] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'>
         <ChatPreview />
@@ -101,19 +100,17 @@ export function Chat() {
       {/* Right: Tabs + Editor/Preview */}
       <div className="flex-[6.5] min-w-0 rounded-lg shadow-lg flex flex-col bg-white dark:bg-gray-800">
         {/* Tabs */}
-        <div className="flex bg-gray-100 dark:bg-gray-700 px-1 py-1 rounded-t-lg my-2 ml-2 space-x-1">
+        <div className="flex bg-gray-100 w-fit dark:bg-gray-700 px-1 py-1 rounded-2xl my-2 ml-2 space-x-1">
           <button
-            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${
-              activeTab === "code" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
+            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${activeTab === "code" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
             onClick={() => setActiveTab("code")}
           >
             Code
           </button>
           <button
-            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${
-              activeTab === "preview" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
+            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${activeTab === "preview" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
             onClick={() => setActiveTab("preview")}
           >
             Preview
@@ -125,13 +122,33 @@ export function Chat() {
           {activeTab === "code" ? (
             <div className="w-full flex flex-col md:flex-row h-full">
               {/* File Explorer */}
-              <PanelGroup direction="horizontal">
-                <Panel defaultSize={25} minSize={20}>
-                  <FileExplorer setActiveFile={setActiveFile} />
+              <PanelGroup direction="vertical">
+                <Panel defaultSize={75}>
+                <PanelGroup direction="horizontal">
+                  <Panel defaultSize={20} minSize={20} maxSize={25}>
+                    <FileExplorer setActiveFile={setActiveFile} />
+                  </Panel>
+                  <PanelResizeHandle className="w-[1px] bg-gray-200 dark:bg-gray-700" />
+                  <Panel>
+                    <CodeEditor data={activeFile} />
+                  </Panel>
+                  </PanelGroup>
                 </Panel>
-                <PanelResizeHandle className="w-2 bg-gray-200 dark:bg-gray-700" />
-                <Panel>
-                  <CodeEditor data={activeFile} />
+                <Panel defaultSize={25}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className='rounded-b-2xl'
+                  >
+                    <Terminal
+                      output={terminalOutput}
+                      command={command}
+                      onCommandChange={setCommand}
+                      onCommandSubmit={handleCommandSubmit}
+                      onClear={clearTerminal}
+                    />
+                  </motion.div> 
                 </Panel>
               </PanelGroup>
             </div>
@@ -145,28 +162,11 @@ export function Chat() {
                 <iframe
                   ref={iframeRef}
                   title="WebContainer"
-                  className="rounded-b-md w-full h-[calc(100vh-71px)]"
-                />
-              )}
+                  className="rounded-b-md w-full h-[calc(100vh-110px)]"
+                  />
+              )} 
             </div>
           )}
-        </div>
-
-        {/* Terminal */}
-        <div className="h-48 border-t border-gray-200 dark:border-gray-700">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Terminal
-            output={terminalOutput}
-            command={command}
-            onCommandChange={setCommand}
-            onCommandSubmit={handleCommandSubmit}
-            onClear={clearTerminal}
-          />
-        </motion.div>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ interface TerminalProps {
   command: string;
   onCommandChange: (cmd: string) => void;
   onCommandSubmit: (cmd: string) => void;
-  onClear: () => void; // Add a clear handler
+  onClear: () => void; 
 }
 
 const Terminal = ({
@@ -24,21 +24,21 @@ const Terminal = ({
     e.preventDefault();
     if (command.trim()) {
       if (command.trim() === "clear") {
-        onClear(); // Handle the clear command
+        onClear(); 
       } else {
         onCommandSubmit(command);
       }
     }
   };
 
-  // Auto-scroll to bottom when output changes
+
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [output]);
 
   return (
-    <div className="bg-black text-green-400 font-mono text-sm p-4 h-48 flex flex-col">
-      <div className="flex-1 overflow-y-auto mb-2">
+    <div className="bg-black text-green-400 font-mono text-sm p-4  h-32 flex flex-col rounded-b-xl">
+      <div className="flex-1 overflow-y-auto mb-2 text-xs">
         {output.map((line, idx) => (
           <div
             key={idx}
