@@ -20,10 +20,7 @@ interface ChatMessage {
   generatedFiles?: { [key: string]: string };
 }
 
-interface FileInfo {
-  file_path: string;
-  description: string;
-}
+
 
 const ChatPreview = () => {
   const [input, setInput] = useState<string>('');
@@ -32,6 +29,7 @@ const ChatPreview = () => {
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
 
 
   useEffect(() => {
@@ -89,10 +87,13 @@ const ChatPreview = () => {
     }
   };
 
+
+
+
   return (
     <div className="w-full flex flex-col h-[calc(100vh-60px)] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       {/* Chat Messages */}
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 px-3 py-4 w-full">
         <div className="w-full flex flex-col gap-5">
           <AnimatePresence>
             {messages.map((message, idx) => (
@@ -104,11 +105,11 @@ const ChatPreview = () => {
                 transition={{ duration: 0.3 }}
               >
                 {message.role === 'user' ? (
-                  <UserMessage message={message?.content} />
+                  <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
-                  <AiMessage message={message?.content} />
+                  <AiMessage key={idx} message={message?.content} />
                 ) : (
-                  <ToolMessage message={JSON.parse(message?.content)} />
+                  <ToolMessage key={idx} setSelectedMessage={setSelectedMessage} selectedMessage={selectedMessage} message={JSON.parse(message?.content)}/>
                 )}
               </motion.div>
             ))}
