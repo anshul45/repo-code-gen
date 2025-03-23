@@ -3,9 +3,9 @@ import { WebContainer } from "@webcontainer/api";
 export const bootWebContainer = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   files: any,
-  iframeRef: React.RefObject<HTMLIFrameElement>,
   setIsLoadingPreview: (loading: boolean) => void,
-  appendTerminal: (data: string) => void // Add terminal output callback
+  appendTerminal: (data: string) => void, // Add terminal output callback
+  setUrl:(url : string) => void
 ) => {
   console.log("Booting WebContainer...");
   
@@ -58,9 +58,8 @@ export const bootWebContainer = async (
     webcontainerInstance.on("server-ready", (port, url) => {
       appendTerminal(`🌐 Server ready at ${url}\n`);
       console.log("Server Ready:", url);
-      if (iframeRef.current) {
-        iframeRef.current.src = url;
-      }
+      if(url)
+      setUrl(url);
     });
 
     return webcontainerInstance;
