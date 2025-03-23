@@ -3,10 +3,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from '../ui/button';
 import { Send } from 'lucide-react';
 
-const InputBox: React.FC = ({ input, setInput, isLoading, handleSubmit }: any) => {
+interface InputBoxProps {
+  input: string;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  isLoading: boolean;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+}
+
+const InputBox: React.FC<InputBoxProps> = ({ input, setInput, isLoading, handleSubmit }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const handleInput = (event: FormEvent<HTMLTextAreaElement>): void => {
+  const handleInput = (): void => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
@@ -16,42 +23,41 @@ const InputBox: React.FC = ({ input, setInput, isLoading, handleSubmit }: any) =
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault(); 
+      event.preventDefault();
       if (handleSubmit) {
-        handleSubmit(event); 
+        handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
       }
     }
   };
 
   return (
-    <div className='border-[1px] rounded-md flex absolute bottom-3  bg-white w-[383px]'>
+    <form
+      onSubmit={handleSubmit}
+      className="w-full flex items-end gap-2 bg-white dark:bg-gray-800"
+    >
       <Textarea
         ref={textareaRef}
         value={input}
         onInput={handleInput}
         onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
-        onKeyDown={handleKeyPress} 
-        rows={5}
+        onKeyDown={handleKeyPress}
+        rows={1}
+        placeholder="Type your message..."
+        className="flex-1 resize-none overflow-hidden focus:outline-none focus:ring-0 border-none shadow-none bg-transparent dark:bg-transparent dark:text-white"
         style={{
-          border: 'none',
-          outline: 'none',
-          boxShadow: 'none',
+          maxHeight: '150px', // Limit the maximum height of the textarea
         }}
-        className="w-full resize-none overflow-hidden focus:outline-none focus:border-none active:border-none border-none shadow-none"
       />
-      {input ? (
-        <Button
-          variant="secondary"
-          style={{ backgroundColor: 'black', color: 'white', marginTop: "12px", marginRight: "8px" }}
-          onClick={(e) => handleSubmit(e)} 
-          disabled={isLoading} 
-        >
-          <Send />
-        </Button>
-      ) : (
-        <div className='mx-[28px]'></div>
-      )}
-    </div>
+      <Button
+        type="submit"
+        variant="ghost"
+        size="icon"
+        className="p-2 rounded-full bg-black dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
+        disabled={isLoading || !input.trim()}
+      >
+        <Send className="h-5 w-5" />
+      </Button>
+    </form>
   );
 };
 
