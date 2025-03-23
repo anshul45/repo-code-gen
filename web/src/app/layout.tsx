@@ -22,8 +22,8 @@ export default function RootLayout({
 
           {/* Main content */}
           <div className="flex-1 flex flex-col">
-            <SidebarTrigger className="md:hidden p-2" />
             <main className="flex-1">
+          <SidebarTrigger className="p-2" />
               {children}
             </main>
           </div>

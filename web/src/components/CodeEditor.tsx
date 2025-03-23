@@ -13,7 +13,6 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
   const { updateFile } = useFileStore();
   const { open } = useSidebar();
 
-  // Determine the file extension for language syntax highlighting
   const fileExtension = data?.path?.split(".").pop() || "plaintext";
   const supportedLanguages = [
     "javascript",
@@ -23,18 +22,17 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
     "json",
     "python",
     "java",
-    "tsx", // Add support for TSX files
+    "tsx", 
   ];
   const language = supportedLanguages.includes(fileExtension) ? fileExtension : "plaintext";
 
-  // Handle editor content changes
   const handleEditorChange = (newValue: string | undefined) => {
     if (newValue !== undefined && data?.path) {
       updateFile(data.path, newValue);
     }
   };
 
-  // If no file is selected, show a placeholder
+
   if (!data) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
@@ -46,18 +44,18 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
   return (
     <div className="border-t-[1px]">
       {/* File path header */}
-      <div className="border-b-[1px] mb-2 pl-2 text-sm bg-gray-50 dark:bg-gray-800">
+      <div className="border-b-[1px] mb-2 pl-2 py-1 text-sm bg-gray-50 dark:bg-gray-800">
         📄 {data.path}
       </div>
 
       {/* Monaco Editor */}
       <Editor
-        height="700px"
+        height="324px"
         width="100%"
         language={language}
         value={data.content}
         onChange={handleEditorChange}
-        theme="vs-light" // Add theme support
+        theme="vs-light"
         options={{
           minimap: { enabled: false },
           fontSize: 13,
@@ -65,13 +63,13 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
             verticalScrollbarSize: 6,
             horizontalScrollbarSize: 6,
           },
-          wordWrap: "on", // Enable word wrap
-          autoClosingBrackets: "always", // Auto-close brackets
-          autoClosingQuotes: "always", // Auto-close quotes
-          formatOnPaste: true, // Format on paste
-          formatOnType: true, // Format on type
+          wordWrap: "on", 
+          autoClosingBrackets: "always", 
+          autoClosingQuotes: "always", 
+          formatOnPaste: true, 
+          formatOnType: true,
         }}
-        loading={<div className="text-gray-500">Loading editor...</div>} // Loading state
+        loading={<div className="text-gray-500">Loading editor...</div>} 
       />
     </div>
   );

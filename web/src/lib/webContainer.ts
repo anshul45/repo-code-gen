@@ -67,7 +67,7 @@ export const bootWebContainer = async (
   } catch (error) {
     console.error("Error booting WebContainer:", error);
     appendTerminal(`❌ Error: ${error instanceof Error ? error.message : 'Failed to boot container'}\n`);
-    setIsLoadingPreview(false); 
+    // setIsLoadingPreview(false); 
     return null;
   }
 };
