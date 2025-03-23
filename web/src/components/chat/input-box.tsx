@@ -52,7 +52,7 @@ const InputBox: React.FC<InputBoxProps> = ({ input, setInput, isLoading, handleS
         type="submit"
         variant="ghost"
         size="icon"
-        className="p-2 rounded-full bg-black dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
+        className="p-2 mb-3 rounded-full bg-black dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
         disabled={isLoading || !input.trim()}
       >
         <Send className="h-5 w-5" />
