@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Button } from '../ui/button'
 import { Checkbox } from "@/components/ui/checkbox"
 import { useFileStore } from "@/store/fileStore";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface FileInfo {
   file_path: string;
@@ -11,6 +12,7 @@ interface FileInfo {
 const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const { addFile, updateMountFile } = useFileStore();
+  const { open } = useSidebar(); 
 
   const generateCode = async () => {
     try {
@@ -107,7 +109,7 @@ const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
 
   
   return (
-    <div className='p-5 border-[1px] rounded-md text-sm bg-gray-100'>
+    <div className={`p-5 border-[1px] rounded-md text-sm bg-gray-100 ${open ? "w-[304px]":"w-[377px]"}`}>
       <div className='bg-white border-[1px] rounded-sm'>
         <div className='border-b-2 p-3 text-[15px] font-semibold'>Files to be Created.</div>
         {message.map((message: any, idx: number) => (<PreviewFiles file={message} key={idx} />))}
