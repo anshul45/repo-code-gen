@@ -14,7 +14,7 @@ export function Chat() {
   const [activeFile, setActiveFile] = useState<any>()
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true)
-  const {files,fileChanges,isMount,mountFile} = useFileStore()
+  const {files, fileChanges, isMount, mountFile} = useFileStore()
 
 
   const writeFileToWebContainer = async (path: string, content: string) => {
@@ -51,68 +51,71 @@ export function Chat() {
 
 
   useEffect(() => {
-if(isMount && mountFile)
-{
-  webcontainer?.mount(JSON.parse(mountFile))
-}
+    if(isMount && mountFile)
+    {
+      webcontainer?.mount(JSON.parse(mountFile))
+    }
   },[isMount])
 
   
 
 
   return (
-    <div className="w-full flex h-[calc(100vh-20px)] gap-4">
+    <div className="w-full flex h-[calc(100vh-20px)] px-4 py-4 gap-4">
       <div className='flex-[3.5]'>
-    <ChatPreview/>
+        <ChatPreview/>
       </div>
    
-      {/* Custom Tabs*/}
-      <div className="flex-[6.5] border-[1px] rounded-md w-full">
-        <div className="flex bg-gray-100 px-1 py-1 rounded-3xl w-fit my-2 ml-2">
+      {/* Right: Tabs + Editor/Preview */}
+      <div className="flex-[6.5] min-w-0 border rounded-md">
+        {/* Tabs */}
+        <div className="flex bg-gray-100 px-1 py-1 rounded-3xl my-2 ml-2 space-x-1">
           <button
-            className={`rounded-3xl px-2 py-0.5 text-sm ${activeTab === "code" ? "bg-white" : ""}`}
+            className={`rounded-3xl px-3 py-0.5 text-sm ${
+              activeTab === "code" ? "bg-white" : ""
+            }`}
             onClick={() => setActiveTab("code")}
           >
             Code
           </button>
           <button
-            className={`rounded-3xl px-2 py-0.5 text-sm ${activeTab === "preview" ? "bg-white" : ""}`}
+            className={`rounded-3xl px-3 py-0.5 text-sm ${
+              activeTab === "preview" ? "bg-white" : ""
+            }`}
             onClick={() => setActiveTab("preview")}
           >
             Preview
           </button>
         </div>
-
-
-        <div className="w-full">
-          {/* Code Editor */}
-          <div className={activeTab === "code" ? "block" : "hidden"}>
-            <div className={`w-full flex ${activeTab === "code" ? "block" : "hidden"}`}>
-              <div className='flex-[0.25]'>
+    
+        {/* Code or Preview Section */}
+        <div className="w-full flex-1 overflow-hidden">
+          {activeTab === "code" ? (
+            <div className="w-full flex flex-col md:flex-row h-full">
+              <div className="w-full md:flex-[0.25]">
                 <FileExplorer setActiveFile={setActiveFile} />
               </div>
-              <div className='flex-[0.75]'>
+              <div className="w-full md:flex-[0.75]">
                 <CodeEditor data={activeFile} />
               </div>
             </div>
-          </div>
-
-          {/* Preview  */}
-          <div className={activeTab === "preview" ? "block w-full border-t-[1px]" : "hidden"}>
-          {isLoadingPreview ? (
-              <div className="flex items-center justify-center  text-gray-500 rounded-b-md w-full h-[calc(100vh-71px)]">
-                Loading preview...
-              </div>
-            ) : (
-              <iframe
-                ref={iframeRef}
-                title="WebContainer"
-                className='rounded-b-md w-full h-[calc(100vh-71px)]'
-              />
-            )}
-          </div>
+          ) : (
+            <div className="w-full h-full border-t-[1px]">
+              {isLoadingPreview ? (
+                <div className="flex items-center justify-center text-gray-500 rounded-b-md w-full h-[calc(100vh-71px)]">
+                  Loading preview...
+                </div>
+              ) : (
+                <iframe
+                  ref={iframeRef}
+                  title="WebContainer"
+                  className="rounded-b-md w-full h-[calc(100vh-71px)]"
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+  </div>  
   );
 }

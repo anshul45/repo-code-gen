@@ -89,3 +89,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 9999px;
+}
