@@ -88,12 +88,14 @@ const FileExplorer = ({ setActiveFile }: any) => {
   };
 
   return (
+    <>
+      <h1 className="text-sm border-t-[1px] py-1 flex pl-3 "><FolderTree size={13} className="mt-1 mr-1" />Files</h1>
     <ScrollArea className="bg-gray-50 h-[calc(100vh-229px)]  w-full border-r-[1px] overflow-y-auto border-t-[1px]">
-      <h1 className="text-sm border-b-[1px] py-1 flex pl-3 "><FolderTree size={13} className="mt-1 mr-1" />Files</h1>
       <div className="">
         <FileNode path="" level={0} setActiveFile={handleSetActiveFile} activeFilePath={activeFilePath} node={files} />
       </div>
     </ScrollArea>
+    </>
   );
 };
 
