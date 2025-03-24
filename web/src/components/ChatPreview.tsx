@@ -109,7 +109,7 @@ const ChatPreview = () => {
                 ) : message.role === 'assistant' ? (
                   <AiMessage key={idx} message={message?.content} />
                 ) : (
-                  <ToolMessage key={idx} setSelectedMessage={setSelectedMessage} selectedMessage={selectedMessage} message={JSON.parse(message?.content)}/>
+                  <ToolMessage key={idx} setSelectedMessage={setSelectedMessage} message={JSON.parse(message?.content)}/>
                 )}
               </motion.div>
             ))}

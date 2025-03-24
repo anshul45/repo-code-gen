@@ -1,32 +1,31 @@
-import React, { useState } from 'react'
-import { Button } from '../ui/button'
-import { Checkbox } from "@/components/ui/checkbox"
+import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import { Checkbox } from "@/components/ui/checkbox";
 import { useFileStore } from "@/store/fileStore";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Loader2 } from 'lucide-react';
 
-interface FileInfo {
-  file_path: string;
-  description: string;
-}
-
-const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+const ToolMessage = ({ message, setSelectedMessage }: any) => {
+  const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
   const { addFile, updateMountFile } = useFileStore();
-  const { open } = useSidebar(); 
+  const { open } = useSidebar();
+  const [generate, setGenerate] = useState<boolean>(false);
+
+  
+  const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
 
   const generateCode = async () => {
     try {
-      setIsGenerating(true);
-      const files = JSON.parse(selectedMessage?.content) as FileInfo[];
+      setGenerate(true);
 
-      // Initialize generatedFiles if it doesn't exist
       setSelectedMessage(prev => prev ? {
         ...prev,
         generatedFiles: prev.generatedFiles || {}
       } : null);
 
-      for (const file of files) {
-        // Update status to generating for current file
+      for (const file of message) {
+        setCurrentGeneratingFile(file.file_path);
+
         setSelectedMessage(prev => prev ? {
           ...prev,
           status: 'generating',
@@ -80,6 +79,9 @@ const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
 
         addFile(updatedData[0]?.path, updatedData[0]?.contents);
 
+        // Mark the file as generated (checked)
+        setGeneratedFiles(prev => ({ ...prev, [file.file_path]: true }));
+
         setSelectedMessage(prev => {
           if (!prev) return null;
 
@@ -94,6 +96,8 @@ const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
             generatedFiles: newGeneratedFiles
           };
         });
+
+        setCurrentGeneratingFile(null);
       }
     } catch (error) {
       console.error('Error generating files:', error);
@@ -102,31 +106,43 @@ const ToolMessage = ({ message,selectedMessage,setSelectedMessage }: any) => {
         status: 'error'
       } : null);
     } finally {
-      setIsGenerating(false);
+      setGenerate(false);
     }
-  }
+  };
 
-
-  
   return (
-    <div className={`p-5 border-[1px] rounded-md text-sm bg-gray-100 ${open ? "w-[304px]":"w-[377px]"}`}>
+    <div className={`p-5 border-[1px] rounded-md text-sm  bg-gray-100  ${open ? "w-[304px]" : "w-[377px]"}`}>
       <div className='bg-white border-[1px] rounded-sm'>
         <div className='border-b-2 p-3 text-[15px] font-semibold'>Files to be Created.</div>
-        {message.map((message: any, idx: number) => (<PreviewFiles file={message} key={idx} />))}
+        {message.map((file: any, idx: number) => (
+          <PreviewFiles 
+            key={idx} 
+            file={file} 
+            isGenerating={currentGeneratingFile === file.file_path} 
+            isChecked={generatedFiles[file.file_path] || false}
+          />
+        ))}
       </div>
-      <Button onClick={generateCode} className='w-full mt-3' style={{ backgroundColor: 'black', color: 'white' }}>Generate</Button>
+      <Button onClick={generateCode} className='w-full mt-3' style={{ backgroundColor: 'black', color: 'white' }}>
+        Generate
+      </Button>
     </div>
-  )
-}
+  );
+};
 
-
-const PreviewFiles = ({ file }: any) => {
+const PreviewFiles = ({ file, isGenerating, isChecked }: any) => {
   return (
     <div className='p-3 flex items-center gap-2'>
-      <Checkbox />
-      <div className='font-semibold'>{file?.file_path}</div>
+      {isGenerating ? (
+        <Loader2 className="animate-spin w-4 h-4 text-blue-500" />
+      ) : (
+        <Checkbox checked={isChecked} />
+      )}
+      <div className='font-semibold text-xs flex items-center gap-2'>
+        {file?.file_path}
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default ToolMessage
+export default ToolMessage;
