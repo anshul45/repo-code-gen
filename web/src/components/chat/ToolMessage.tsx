@@ -10,7 +10,6 @@ const ToolMessage = ({ message, setSelectedMessage }: any) => {
   const { addFile, updateMountFile } = useFileStore();
   const { open } = useSidebar();
   const [generate, setGenerate] = useState<boolean>(false);
-
   
   const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
 
@@ -29,14 +28,14 @@ const ToolMessage = ({ message, setSelectedMessage }: any) => {
         setSelectedMessage(prev => prev ? {
           ...prev,
           status: 'generating',
-          currentFile: file.file_path
+          currentFile: file.file_path 
         } : null);
 
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: `Generate ${file.file_path}`,
+            message: `Generate ${file.file_path} , Description ${file.description}`,
             user_id: localStorage.getItem('chatUserId'),
             intent: 'code'
           }),
