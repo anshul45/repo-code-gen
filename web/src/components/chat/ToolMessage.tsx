@@ -4,7 +4,6 @@ import { files as templateFiles } from '@/common/next_template';
 import { Button } from '../ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFileStore } from "@/store/fileStore";
-import { useSidebar } from "@/components/ui/sidebar";
 import { Loader2 } from 'lucide-react';
 import { 
   FileDescription, 
@@ -71,7 +70,6 @@ interface PreviewFilesProps {
 const ToolMessage = ({ message, setSelectedMessage, setActiveFile }: ToolMessageProps) => {
   const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
   const { addFile, updateMountFile } = useFileStore();
-  const { open } = useSidebar();
   const [generating, setGenerating] = useState<boolean>(false);
   const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
@@ -301,7 +299,7 @@ Please ensure the response is valid JSON.`,
   };
 
   return (
-    <div className={`p-5 border-[1px] rounded-md text-sm  bg-gray-100  ${open ? "w-[304px]" : "w-[377px]"}`}>
+    <div className="p-5 border-[1px] rounded-md text-sm bg-gray-100 max-w-full">
       <div className='bg-white border-[1px] rounded-sm'>
         <div className='border-b-2 p-3 text-[15px] font-semibold'>Files to be Created.</div>
         {message.map((file, idx) => (

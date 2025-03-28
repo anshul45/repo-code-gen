@@ -1,8 +1,46 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { useFileStore } from '@/store/fileStore';
-import { ChevronDown, ChevronRight, FolderTree, SquareDashedBottomCode } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, FolderTree, SquareDashedBottomCode } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
+
+interface FileInfo {
+  filename: string;
+  content: string;
+}
+
+const downloadFile = (content: string, filename: string): void => {
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+};
+
+const downloadDirectory = (node: any, basePath: string): FileInfo[] => {
+  if (node.file) {
+    return [{
+      filename: basePath,
+      content: node.file.contents
+    }];
+  }
+
+  if (node.directory) {
+    return Object.entries(node.directory).flatMap(([key, value]: [string, any]): FileInfo[] => {
+      const newPath = basePath ? `${basePath}/${key}` : key;
+      return downloadDirectory(value, newPath);
+    });
+  }
+
+  return Object.entries(node).flatMap(([key, value]: [string, any]): FileInfo[] => {
+    const newPath = basePath ? `${basePath}/${key}` : key;
+    return downloadDirectory(value, newPath);
+  });
+};
 
 const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, fileChanges }: { 
   node: any; 
@@ -25,10 +63,27 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
       <div className="w-full">
         <div
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`cursor-pointer flex text-sm w-full pl-${level || 1 * 2} py-1`}
+          className={`cursor-pointer flex text-sm w-full pl-${level || 1 * 2} py-1 hover:bg-gray-100 group items-center justify-between pr-2`}
         >
-          {isExpanded ? <ChevronDown size={18} className="mt-0.5" /> : <ChevronRight size={18} className="mt-0.5" />} 
-          {getFileName(currentPath) || "root"}
+          <div className="flex">
+            {isExpanded ? <ChevronDown size={18} className="mt-0.5" /> : <ChevronRight size={18} className="mt-0.5" />} 
+            {getFileName(currentPath) || "root"}
+          </div>
+          <Download 
+            size={16} 
+            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600" 
+            onClick={(e) => {
+              e.stopPropagation();
+              const files: FileInfo[] = downloadDirectory(node, currentPath);
+              if (files.length === 1) {
+                downloadFile(files[0].content, getFileName(files[0].filename));
+              } else {
+                files.forEach(file => {
+                  downloadFile(file.content, getFileName(file.filename));
+                });
+              }
+            }}
+          />
         </div>
         {isExpanded &&
           Object.keys(node.directory).map((key) => (
@@ -49,12 +104,23 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
     return (
       <div className="w-full">
         <div
-          className={`text-gray-700 text-sm cursor-pointer flex items-center px-2 py-1 w-full pl-${level || 1 * 2} ${
+          className={`text-gray-700 text-sm cursor-pointer flex items-center justify-between px-2 py-1 w-full pl-${level || 1 * 2} group hover:bg-gray-100 ${
             activeFilePath === currentPath ? "bg-blue-200 text-blue-700 font-semibold" : ""
           }`}
           onClick={() => setActiveFile({ content: node.file.contents, path: currentPath, isNew })}
         >
-          <SquareDashedBottomCode size={15} className="mt-1 mb-[1px] mr-1" />{getFileName(currentPath).length >12 ? getFileName(currentPath).slice(0,9)+"...":getFileName(currentPath)}
+          <div className="flex items-center">
+            <SquareDashedBottomCode size={15} className="mt-1 mb-[1px] mr-1" />
+            {getFileName(currentPath).length >12 ? getFileName(currentPath).slice(0,9)+"...":getFileName(currentPath)}
+          </div>
+          <Download 
+            size={16} 
+            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600" 
+            onClick={(e) => {
+              e.stopPropagation();
+              downloadFile(node.file.contents, getFileName(currentPath));
+            }}
+          />
         </div>
       </div>
     );

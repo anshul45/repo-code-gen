@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
+import Header from "@/components/Header"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,10 +23,13 @@ export default function RootLayout({
 
           {/* Main content */}
           <div className="flex-1 flex flex-col">
-            <main className="flex-1">
-          <SidebarTrigger className="p-2" />
-              {children}
-            </main>
+            <div className="flex items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b">
+              <SidebarTrigger className="p-2 border-r" />
+              <div className="flex-1">
+                <Header />
+              </div>
+            </div>
+            {children}
           </div>
         </SidebarProvider>
       </body>

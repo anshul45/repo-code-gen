@@ -45,7 +45,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton asChild>
               <a href="/" className="flex items-center gap-2">
                 <Code className="h-5 w-5" />
-                <span className="text-base font-semibold">Repo Code Gen.</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

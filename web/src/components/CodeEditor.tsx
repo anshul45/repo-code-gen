@@ -102,7 +102,7 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
 
       {/* Monaco Editor */}
       <Editor
-        height="calc(100vh - 266px)"
+        height="calc(100vh - 296px)"
         width="100%"
         language={language}
         value={displayContent}

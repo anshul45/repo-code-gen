@@ -1,7 +1,7 @@
 import React, { useRef, ChangeEvent, FormEvent } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from '../ui/button';
-import { Send } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 
 interface InputBoxProps {
   input: string;
@@ -55,7 +55,11 @@ const InputBox: React.FC<InputBoxProps> = ({ input, setInput, isLoading, handleS
         className="p-2 mb-3 rounded-full bg-black dark:bg-gray-700 text-white hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors"
         disabled={isLoading || !input.trim()}
       >
-        <Send className="h-5 w-5" />
+        {isLoading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <Send className="h-5 w-5" />
+        )}
       </Button>
     </form>
   );

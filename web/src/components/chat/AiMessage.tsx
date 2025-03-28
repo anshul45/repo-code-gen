@@ -1,21 +1,27 @@
 import React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useSidebar } from "@/components/ui/sidebar";
+interface AiMessageProps {
+  message: string;
+}
 
-const AiMessage = ({ message }: any) => {
-  const { open } = useSidebar(); 
+const AiMessage = ({ message }: AiMessageProps) => {
   return (
-    <div className={`p-3.5 border-[1px] rounded-md text-sm bg-gray-50 ${open ? "w-[304px]":"w-[377px]"}`}>
+    <div className="p-3.5 border-[1px] rounded-md text-sm bg-gray-50 max-w-full">
       <Markdown
         remarkPlugins={[remarkGfm]}
         components={{
           p: ({ children }) => <p className="break-words">{children}</p>,
-          code: ({ children }) => (
-            <code className="bg-gray-200 px-1 py-0.5 rounded text-sm">{children}</code>
-          ),
+          code: ({ children, ...props }) => {
+            const isInline = !props.className?.includes('code-block');
+            return isInline ? (
+              <code className="font-mono text-sm">{children}</code>
+            ) : (
+              <code className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono">{children}</code>
+            )
+          },
           pre: ({ children }) => (
-            <pre className="overflow-auto bg-gray-200 p-2 rounded text-sm">{children}</pre>
+            <pre className="overflow-auto font-mono whitespace-pre p-2 text-sm">{children}</pre>
           ),
           a: ({ href, children }) => (
             <a href={href} className="text-blue-600 underline break-all" target="_blank" rel="noopener noreferrer">
