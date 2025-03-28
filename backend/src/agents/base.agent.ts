@@ -173,8 +173,10 @@ export class BaseAgent {
           const message = (response.content[0] as AnthropicContent).text;
           const assistantMessage: Message = {
             role: 'assistant',
-            content: JSON.stringify({ message }),
-            type: MessageType.CODE,
+            content: JSON.stringify({
+              message: message,
+              type: MessageType.CODE,
+            }),
           };
 
           this.thread.push(assistantMessage);
