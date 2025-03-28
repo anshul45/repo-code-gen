@@ -17,7 +17,7 @@ export const files = {
       },
       "next.config.js": {
         "file": {
-          "contents": "/** @type {import('next').NextConfig} */\nconst nextConfig = {\n  output: 'export',\n  eslint: {\n    ignoreDuringBuilds: true,\n  },\n  images: { unoptimized: true },\n};\n\nmodule.exports = nextConfig;\n"
+          "contents": "/** @type {import('next').NextConfig} */\nconst nextConfig = {\n  output: 'export',\n  eslint: {\n    ignoreDuringBuilds: true,\n  },\n  images: { domains: ['fastly.picsum.photos', 'picsum.photos']},\n};\n\nmodule.exports = nextConfig;\n"
         }
       },
       "package.json": {
@@ -46,7 +46,7 @@ export const files = {
             "directory": {
               "globals.css": {
                 "file": {
-                  "contents": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n:root {\n  --foreground-rgb: 0, 0, 0;\n  --background-start-rgb: 214, 219, 220;\n  --background-end-rgb: 255, 255, 255;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --foreground-rgb: 255, 255, 255;\n    --background-start-rgb: 0, 0, 0;\n    --background-end-rgb: 0, 0, 0;\n  }\n}\n\n@layer base {\n  :root {\n    --background: 0 0% 100%;\n    --foreground: 0 0% 3.9%;\n    --card: 0 0% 100%;\n    --card-foreground: 0 0% 3.9%;\n    --popover: 0 0% 100%;\n    --popover-foreground: 0 0% 3.9%;\n    --primary: 0 0% 9%;\n    --primary-foreground: 0 0% 98%;\n    --secondary: 0 0% 96.1%;\n    --secondary-foreground: 0 0% 9%;\n    --muted: 0 0% 96.1%;\n    --muted-foreground: 0 0% 45.1%;\n    --accent: 0 0% 96.1%;\n    --accent-foreground: 0 0% 9%;\n    --destructive: 0 84.2% 60.2%;\n    --destructive-foreground: 0 0% 98%;\n    --border: 0 0% 89.8%;\n    --input: 0 0% 89.8%;\n    --ring: 0 0% 3.9%;\n    --chart-1: 12 76% 61%;\n    --chart-2: 173 58% 39%;\n    --chart-3: 197 37% 24%;\n    --chart-4: 43 74% 66%;\n    --chart-5: 27 87% 67%;\n    --radius: 0.5rem;\n  }\n  .dark {\n    --background: 0 0% 3.9%;\n    --foreground: 0 0% 98%;\n    --card: 0 0% 3.9%;\n    --card-foreground: 0 0% 98%;\n    --popover: 0 0% 3.9%;\n    --popover-foreground: 0 0% 98%;\n    --primary: 0 0% 98%;\n    --primary-foreground: 0 0% 9%;\n    --secondary: 0 0% 14.9%;\n    --secondary-foreground: 0 0% 98%;\n    --muted: 0 0% 14.9%;\n    --muted-foreground: 0 0% 63.9%;\n    --accent: 0 0% 14.9%;\n    --accent-foreground: 0 0% 98%;\n    --destructive: 0 62.8% 30.6%;\n    --destructive-foreground: 0 0% 98%;\n    --border: 0 0% 14.9%;\n    --input: 0 0% 14.9%;\n    --ring: 0 0% 83.1%;\n    --chart-1: 220 70% 50%;\n    --chart-2: 160 60% 45%;\n    --chart-3: 30 80% 55%;\n    --chart-4: 280 65% 60%;\n    --chart-5: 340 75% 55%;\n  }\n}\n\n@layer base {\n  * {\n    @apply border-border;\n  }\n  body {\n    @apply bg-background text-foreground;\n  }\n}\n"
+                  "contents": "@tailwind base; @tailwind components; @tailwind utilities; @layer base { :root { --background: 0 0% 100%; --foreground: 0 0% 3.9%; --card: 0 0% 100%; --card-foreground: 0 0% 3.9%; --popover: 0 0% 100%; --popover-foreground: 0 0% 3.9%; --primary: 0 0% 9%; --primary-foreground: 0 0% 98%; --secondary: 0 0% 96.1%; --secondary-foreground: 0 0% 9%; --muted: 0 0% 96.1%; --muted-foreground: 0 0% 45.1%; --accent: 0 0% 96.1%; --accent-foreground: 0 0% 9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --border: 0 0% 89.8%; --input: 0 0% 89.8%; --ring: 0 0% 3.9%; --radius: 0.5rem; } .dark { --background: 0 0% 3.9%; --foreground: 0 0% 98%; --card: 0 0% 3.9%; --card-foreground: 0 0% 98%; --popover: 0 0% 3.9%; --popover-foreground: 0 0% 98%; --primary: 0 0% 98%; --primary-foreground: 0 0% 9%; --secondary: 0 0% 14.9%; --secondary-foreground: 0 0% 98%; --muted: 0 0% 14.9%; --muted-foreground: 0 0% 63.9%; --accent: 0 0% 14.9%; --accent-foreground: 0 0% 98%; --destructive: 0 62.8% 30.6%; --destructive-foreground: 0 0% 98%; --border: 0 0% 14.9%; --input: 0 0% 14.9%; --ring: 0 0% 83.1%; } } @layer base { * { @apply border-border; } body { @apply bg-background text-foreground; } } .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } div#derd { display: none; } div#erd { max-width: 100%; }"
                 }
               },
               "layout.tsx": {
@@ -56,7 +56,7 @@ export const files = {
               },
               "page.tsx": {
                 "file": {
-                  "contents": "export default function Home() {\n  return (\n    <div\n      style={{\n        maxWidth: 1280,\n        margin: '0 auto',\n        padding: '2rem',\n        textAlign: 'center',\n      }}\n    >\n      Welcome\nStart Editing Your Nextjs Template    </div>\n  );\n}\n"
+                  "contents": "export default function Home() {\n  return (\n    <div className=\"max-w-5xl mx-auto p-8 text-center text-2xl font-medium text-gray-100 bg-gray-900 min-h-screen flex items-center justify-center\">\n      Welcome 🚀<br />\n      Tell Curie Bot what you want to build today\n      <span className=\"block mt-4 text-purple-400\">(e.g. Spotify-like application)</span>\n    </div>\n  );\n}\n"
                 }
               }
             }

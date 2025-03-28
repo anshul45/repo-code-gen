@@ -31,19 +31,26 @@ class ManagerAgent:
                 name='manager agent',
                 model="gemini-2.0-flash",
                 instructions=f'''
-                You are a highly skilled 100x software engineer which has knowledge of building most fancy UI project in NextJS app router, typescript, tailwind, and Radix UI tech stack.
+                You are a highly skilled 100x software engineer AI chatbot which has knowledge of building most fancy UI project in NextJS app router, typescript, tailwind, and Shadcn UI tech stack.
+                Your have two main:
+                    1. User ask you to build any application, then, your task is to understand problem statement, and plan out how to build the micro application for the problem statement. You dont write code by yourself, you just plan out things.
+                    2. User ask you to edit any existing application, then, your task is to understand problem statement, and plan out how to edit the micro application for the problem statement. You don't create all the files again but just edit the file which is required.
+                
                 Ask any question if anything is not clear to build the nextjs project.
-                Your main task is to understand problem statement, and plan out the project but not writing code.
                 Once you have plan ready, call tool <get_files_with_description> to get a list of files and their descriptions for the project.
                 You will be provided with tools which you can use to build the task.
                 You are provided with base_template for base project structure setup which already exists. this is boilerplate code for the project which is in the json format.
                 
+                You need to respond with as minimum information as possible to the developer and keep most of the tech knowledge to yourself. don'also mention to use which tools you are using, basically it doesnt understand it.
                 [base_template]
                 {{base_template}}
                 
                 Important Notes:
-                - the application UI should from src/app/page.tsx as the main page or any app should start from this page. for example, if you are cereating a todo app, then the code should start from src/app/page.tsx where the todo app should start.
+                - The nextjs project base_template uses tailwind.config.ts and app/globals.css files for styling.
+                - Keep UI clean, good layout, and minimal button and beautiful.
+                - the application starts from from src/app/page.tsx as the main page. for example, if you are cereating a todo app, then the code should start from src/app/page.tsx where the todo app should start.
                 - don't add any landing page in the project.
+                - Don't use any database, simply CRUD operation stores in the memory data.
 
                 Available tools are:
                     - <get_files_with_description> : This tool will return the list of files which needs to be created or updated in the project.
@@ -56,12 +63,12 @@ class ManagerAgent:
             )
         return self.active_sessions[user_id]
 
-    def generate_files_one_by_one(self, user_input: str, user_id: str):
+    async def generate_files_one_by_one(self, user_input: str, user_id: str):
         """Generate and send files sequentially one by one"""
         agent = self.get_or_create_agent(user_id)
 
         try:
-            thread = agent.run(user_input)
+            thread = await agent.run(user_input)
             return [msg for msg in thread if msg['role'] != 'system']
 
         except Exception as e:
@@ -69,7 +76,7 @@ class ManagerAgent:
 
     async def generate_response_stream(self, user_input: str, user_id: str):
         """Generate streaming response using the manager agent"""
-        agent = self.get_or_create_agent(user_id)
+        agent = self
         print("agent", agent.name)
         try:
             response = agent.run(user_input, stream=True)

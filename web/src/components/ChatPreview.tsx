@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,24 +8,48 @@ import AiMessage from './chat/AiMessage';
 import ToolMessage from './chat/ToolMessage';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface ChatMessage {
-  role: 'assistant' | 'user' | 'tool';
-  content: string;
-  type?: string;
-  status?: 'pending' | 'generating' | 'completed' | 'error';
-  output?: string;
-  tool_call_id?: string;
-  name?: string;
-  agent_name?: string;
-  currentFile?: string;
-  generatedFiles?: { [key: string]: string };
+import { ChatMessage, SetSelectedMessageType } from '@/types/chat';
+
+
+
+interface ChatPreviewProps {
+  setActiveFile: (file: { content: string; path: string; isNew: boolean }) => void;
 }
 
-
-
-const ChatPreview = () => {
+const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
   const [input, setInput] = useState<string>('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: `
+╭──────────────────────────╮
+│   ✨ Welcome to Curie Bot! ✨   │
+╰──────────────────────────╯
+
+🚀 I'm your personal coding companion, ready to help you build amazing applications!
+
+📌 Here are some ideas to get you started:
+
+   🎵  Spotify Clone
+       Stream your favorite music
+   
+   📝  Todo List
+       Organize your tasks
+   
+   🌤️  Weather App
+       Check the forecast
+   
+   🎮  Game Hub
+       Create simple games
+   
+   📱  Social Media Feed
+       Share your thoughts
+
+💡 Just tell me what you'd like to build, and I'll guide you through every step of the process!
+
+✨ Let's create something awesome together! ✨`
+    }
+  ]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +98,8 @@ const ChatPreview = () => {
       }
 
       if (data.result) {
-        setMessages((prev) => [...prev, ...data.result]);
+        const newMessages = data.result.map((msg: ChatMessage) => ({ ...msg, isNew: true }));
+        setMessages((prev) => [...prev, ...newMessages]);
 
         if (data.result.length > 0) {
           setSelectedMessage(data.result[data.result.length - 1]);
@@ -95,25 +121,51 @@ const ChatPreview = () => {
       {/* Chat Messages */}
       <ScrollArea className="flex-1 px-3 py-4 w-full">
         <div className="w-full flex flex-col gap-5">
-          <AnimatePresence>
-            {messages.map((message, idx) => (
+          {messages.map((message, idx) => (
+            message.isNew ? (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
+                onAnimationComplete={() => {
+                  setMessages(prev => 
+                    prev.map((msg, i) => 
+                      i === idx ? { ...msg, isNew: false } : msg
+                    )
+                  );
+                }}
               >
                 {message.role === 'user' ? (
                   <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
                   <AiMessage key={idx} message={message?.content} />
                 ) : (
-                  <ToolMessage key={idx} setSelectedMessage={setSelectedMessage} message={JSON.parse(message?.content)}/>
+                  <ToolMessage 
+                    key={idx} 
+                    setSelectedMessage={setSelectedMessage} 
+                    message={JSON.parse(message?.content)}
+                    setActiveFile={setActiveFile}
+                  />
                 )}
               </motion.div>
-            ))}
-          </AnimatePresence>
+            ) : (
+              <div key={idx}>
+                {message.role === 'user' ? (
+                  <UserMessage key={idx} message={message?.content} />
+                ) : message.role === 'assistant' ? (
+                  <AiMessage key={idx} message={message?.content} />
+                ) : (
+                  <ToolMessage 
+                    key={idx} 
+                    setSelectedMessage={setSelectedMessage} 
+                    message={JSON.parse(message?.content)}
+                    setActiveFile={setActiveFile}
+                  />
+                )}
+              </div>
+            )
+          ))}
           <div ref={scrollRef} />
         </div>
       </ScrollArea>

@@ -48,8 +48,6 @@ export const bootWebContainer = async (
       })
     );
 
-    setIsLoadingPreview(false); 
-
     webcontainerInstance.fs.watch("/", async (event, filename) => {
       console.log("File Changed:", filename);
       appendTerminal(`📁 File changed: ${filename}\n`);
@@ -58,8 +56,10 @@ export const bootWebContainer = async (
     webcontainerInstance.on("server-ready", (port, url) => {
       appendTerminal(`🌐 Server ready at ${url}\n`);
       console.log("Server Ready:", url);
-      if(url)
-      setUrl(url);
+      if(url) {
+        setUrl(url);
+        setIsLoadingPreview(false);
+      }
     });
 
     return webcontainerInstance;
