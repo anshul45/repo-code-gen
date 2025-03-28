@@ -14,7 +14,7 @@ enum MessageType {
   JSON = 'json',
   JSON_BUTTON = 'json-button',
   JSON_FILES = 'json-files',
-  CODE = 'code'
+  CODE = 'code',
 }
 
 interface ChatRequest {
@@ -67,7 +67,10 @@ export class ChatController {
           } catch (e) {
             console.error('JSON parsing error:', e);
           }
-        } else if (lastMessage.type === MessageType.JSON_BUTTON && lastMessage.content) {
+        } else if (
+          lastMessage.type === MessageType.JSON_BUTTON &&
+          lastMessage.content
+        ) {
           try {
             lastMessage.content = JSON.parse(lastMessage.content);
           } catch (e) {
@@ -76,7 +79,10 @@ export class ChatController {
         } else if (lastMessage.type !== MessageType.JSON_FILES) {
           try {
             const jsonResponse = JSON.parse(lastMessage.content);
-            if (jsonResponse.type === MessageType.CODE && jsonResponse.message) {
+            if (
+              jsonResponse.type === MessageType.CODE &&
+              jsonResponse.message
+            ) {
               lastMessage.content = jsonResponse.message;
               lastMessage.type = jsonResponse.type;
             }

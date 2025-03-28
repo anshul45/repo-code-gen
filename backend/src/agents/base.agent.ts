@@ -1,8 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { ConfigService } from '@nestjs/config';
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
 import { RedisCacheService } from 'src/redis/redis.service';
+import { MessageType } from 'src/types/message.types';
+
+interface AnthropicContent {
+  type: 'text';
+  text: string;
+}
 
 type ResponseFormat = ChatCompletionCreateParamsBase['response_format'];
 
@@ -44,7 +51,7 @@ interface FunctionSchema {
 
 @Injectable()
 export class BaseAgent {
-  protected client: OpenAI;
+  protected client: OpenAI | Anthropic;
   protected thread: Message[] = [];
   protected overallThread: Message[] = [];
   protected toolsMap: Record<string, Tool['execute']> = {};
@@ -58,11 +65,18 @@ export class BaseAgent {
     protected readonly sessionId: string | null = null,
     protected readonly temperature: number = 1,
     protected readonly tools: Tool[] = [],
+    protected readonly clientType: string = 'openai',
   ) {
-    this.client = new OpenAI({
-      baseURL: this.configService.get('LLM_BASE_URL'),
-      apiKey: this.configService.get('LLM_API_KEY'),
-    });
+    if (this.clientType === 'anthropic') {
+      this.client = new Anthropic({
+        apiKey: this.configService.get('ANTHROPIC_API_KEY'),
+      });
+    } else {
+      this.client = new OpenAI({
+        baseURL: this.configService.get('LLM_BASE_URL'),
+        apiKey: this.configService.get('LLM_API_KEY'),
+      });
+    }
 
     if (this.tools.length) {
       this.toolsMap = this.tools.reduce(
@@ -142,28 +156,66 @@ export class BaseAgent {
       this.overallThread.push({ role: 'user', content: query });
 
       if (!this.tools.length) {
-        const response = await this.client.chat.completions.create({
-          model: this.model,
-          messages: this.thread as any,
-          temperature: this.temperature,
-          response_format: responseFormat,
-        });
+        if (this.clientType === 'anthropic') {
+          const anthropicClient = this.client as Anthropic;
+          const response = await anthropicClient.messages.create({
+            model: this.model,
+            max_tokens: 8192,
+            messages: [
+              {
+                role: 'user',
+                content: query,
+              },
+            ],
+            system: this.instructions,
+          });
 
-        const message = response.choices[0].message.content;
-        const assistantMessage = { role: 'assistant', content: message };
+          const message = (response.content[0] as AnthropicContent).text;
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: JSON.stringify({ message }),
+            type: MessageType.CODE,
+          };
 
-        this.thread.push(assistantMessage);
-        this.overallThread.push(assistantMessage);
-        await this.saveThread();
+          this.thread.push(assistantMessage);
+          this.overallThread.push(assistantMessage);
+          await this.saveThread();
 
-        return this.overallThread;
+          return this.overallThread;
+        } else {
+          const openaiClient = this.client as OpenAI;
+          const response = await openaiClient.chat.completions.create({
+            model: this.model,
+            messages: this.thread as any,
+            temperature: this.temperature,
+            response_format: responseFormat,
+          });
+
+          const message = response.choices[0].message.content;
+          const assistantMessage: Message = {
+            role: 'assistant',
+            content: message,
+            type: MessageType.TEXT,
+          };
+
+          this.thread.push(assistantMessage);
+          this.overallThread.push(assistantMessage);
+          await this.saveThread();
+
+          return this.overallThread;
+        }
       }
 
       const toolSchemas = this.toolsToToolSchema();
       let toolCallCount = 0;
 
       while (toolCallCount < maxToolCalls) {
-        const response = await this.client.chat.completions.create({
+        if (this.clientType === 'anthropic') {
+          throw new Error('Tool calls are not yet supported with Anthropic');
+        }
+
+        const openaiClient = this.client as OpenAI;
+        const response = await openaiClient.chat.completions.create({
           model: this.model,
           messages: this.thread as any,
           tools: toolSchemas,
@@ -175,7 +227,7 @@ export class BaseAgent {
         const assistantMessage: Message = {
           role: 'assistant',
           content: message.content,
-          type: 'text',
+          type: MessageType.TEXT,
           agent_name: this.name,
         };
 
@@ -215,7 +267,7 @@ export class BaseAgent {
               const toolResponse: Message = {
                 role: 'tool',
                 content: JSON.stringify({ error: error.message }),
-                type: 'error',
+                type: MessageType.ERROR,
                 agent_name: this.name,
               };
               this.thread.push(toolResponse);
@@ -237,17 +289,17 @@ export class BaseAgent {
     }
   }
 
-  private getToolResponseType(toolName: string): string {
+  private getToolResponseType(toolName: string): MessageType {
     if (toolName === 'get_files_with_description') {
-      return 'json-files';
+      return MessageType.JSON_FILES;
     }
     if (['get_button'].includes(toolName)) {
-      return 'json-button';
+      return MessageType.JSON_BUTTON;
     }
     if (this.name === 'coder_agent') {
-      return 'code';
+      return MessageType.CODE;
     }
-    return 'text';
+    return MessageType.TEXT;
   }
 
   private async saveThread(): Promise<void> {

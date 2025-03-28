@@ -43,6 +43,7 @@ export class CoderAgent {
         userId,
         0.6,
         [],
+        'anthropic',
       );
 
       this.activeSessions.set(userId, agent);
