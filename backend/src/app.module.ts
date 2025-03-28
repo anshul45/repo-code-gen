@@ -1,11 +1,18 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ChatModule } from './chat/chat.module';
-import { RedisCacheModule } from './redis/redis.cache.module';
+import { RedisCacheModule } from './redis/redis.module';
 
 @Module({
-  imports: [ChatModule,RedisCacheModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ChatModule,
+    RedisCacheModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

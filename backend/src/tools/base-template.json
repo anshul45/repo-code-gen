@@ -1,0 +1,38 @@
+{
+  "src": {
+    "directory": {
+      "app": {
+        "directory": {
+          "page.tsx": {
+            "file": {
+              "contents": "// Main page component"
+            }
+          },
+          "layout.tsx": {
+            "file": {
+              "contents": "// Root layout component"
+            }
+          },
+          "globals.css": {
+            "file": {
+              "contents": "// Global styles"
+            }
+          }
+        }
+      },
+      "components": {
+        "directory": {
+          "ui": {
+            "directory": {
+              "button.tsx": {
+                "file": {
+                  "contents": "// Button component"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
