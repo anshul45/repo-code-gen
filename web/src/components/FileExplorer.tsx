@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { useFileStore } from '@/store/fileStore';
-import { ChevronDown, ChevronRight, Download, FolderTree, SquareDashedBottomCode } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, FolderTree, SquareDashedBottomCode, Lock } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 
 interface FileInfo {
@@ -42,13 +42,15 @@ const downloadDirectory = (node: any, basePath: string): FileInfo[] => {
   });
 };
 
-const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, fileChanges }: { 
+const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, fileChanges, isMount, lockedFiles }: { 
   node: any; 
   path: string;
   level: number;
   activeFilePath: string;
   setActiveFile: any;
   fileChanges: { filename: string; content: string; isNew?: boolean } | null;
+  isMount: boolean;
+  lockedFiles: Set<string>;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const currentPath = path;
@@ -95,23 +97,27 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
               activeFilePath={activeFilePath}
               setActiveFile={setActiveFile}
               fileChanges={fileChanges}
+              isMount={isMount}
+              lockedFiles={lockedFiles}
             />
           ))}
       </div>
     );
   } else if (node.file) {
     const isNew = fileChanges?.filename === currentPath && fileChanges.isNew;
+    const isLocked = lockedFiles.has(currentPath);
     return (
       <div className="w-full">
         <div
-          className={`text-gray-700 text-sm cursor-pointer flex items-center justify-between px-2 py-1 w-full pl-${level || 1 * 2} group hover:bg-gray-100 ${
+          className={`text-gray-700 text-sm cursor-pointer hover:bg-gray-100 flex items-center justify-between px-2 py-1 w-full pl-${level || 1 * 2} group ${
             activeFilePath === currentPath ? "bg-blue-200 text-blue-700 font-semibold" : ""
-          }`}
+          } ${isLocked ? "opacity-75" : ""}`}
           onClick={() => setActiveFile({ content: node.file.contents, path: currentPath, isNew })}
         >
           <div className="flex items-center">
             <SquareDashedBottomCode size={15} className="mt-1 mb-[1px] mr-1" />
             {getFileName(currentPath).length >12 ? getFileName(currentPath).slice(0,9)+"...":getFileName(currentPath)}
+            {isLocked && <Lock size={12} className="ml-1 text-yellow-600" />}
           </div>
           <Download 
             size={16} 
@@ -136,6 +142,8 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
             activeFilePath={activeFilePath}
             setActiveFile={setActiveFile}
             fileChanges={fileChanges}
+            isMount={isMount}
+            lockedFiles={lockedFiles}
           />
         ))}
       </div>
@@ -144,15 +152,24 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
 };
 
 const FileExplorer = ({ setActiveFile }: any) => {
-  const { files, fileChanges } = useFileStore();
-  const [activeFilePath, setActiveFilePath] = useState("");
+  const { files, fileChanges, isMount, activeFile, lockedFiles } = useFileStore();
+  const [activeFilePath, setActiveFilePath] = useState(activeFile?.path || "");
 
   useEffect(() => {
-    const defaultPath = "src/app/page.tsx";
-    const defaultContent = files?.["src"]?.["directory"]?.["app"]?.["directory"]?.["page.tsx"]?.["file"]?.["contents"] || "";
-    setActiveFile({ content: defaultContent, path: defaultPath, isNew: false });
-    setActiveFilePath(defaultPath);
-  }, []);
+    if (activeFile?.path) {
+      setActiveFilePath(activeFile.path);
+    }
+  }, [activeFile?.path]);
+
+  useEffect(() => {
+    // Only set default file on initial mount if no active file exists
+    if (!activeFile && !activeFilePath) {
+      const defaultPath = "src/app/page.tsx";
+      const defaultContent = files?.["src"]?.["directory"]?.["app"]?.["directory"]?.["page.tsx"]?.["file"]?.["contents"] || "";
+      setActiveFile({ content: defaultContent, path: defaultPath, isNew: false });
+      setActiveFilePath(defaultPath);
+    }
+  }, [activeFile, activeFilePath, files, setActiveFile]);
 
   const handleSetActiveFile = (file: { content: string, path: string, isNew?: boolean }) => {
     setActiveFile(file);
@@ -171,6 +188,8 @@ const FileExplorer = ({ setActiveFile }: any) => {
             activeFilePath={activeFilePath} 
             node={files}
             fileChanges={fileChanges}
+            isMount={isMount}
+            lockedFiles={lockedFiles}
           />
         </div>
       </ScrollArea>

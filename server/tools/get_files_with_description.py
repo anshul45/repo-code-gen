@@ -1,8 +1,7 @@
 import json
 import os
 
-from Azent import SimpleAgent
-
+from curie_agent.SimpleAgent import SimpleAgent
 
 def get_files_with_description(problem_statement: str):
     """

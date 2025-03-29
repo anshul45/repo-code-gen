@@ -1,14 +1,13 @@
 import json
 import os
-
-from Azent.Azent import Agent
+from curie_agent.BaseAgent import BaseAgent
 
 
 class CoderAgent:
     def __init__(self):
         self.active_sessions = {}
 
-    def get_or_create_agent(self, user_id: str) -> Agent:
+    def get_or_create_agent(self, user_id: str) -> BaseAgent:
         """Get existing agent or create new one for the user"""
         
         if user_id not in self.active_sessions:
@@ -16,7 +15,7 @@ class CoderAgent:
             with open('/Users/abhilasha/Documents/chatbots/code-gen-bot/server/tools/base_template_project_structure.json') as f:
                 base_template = json.load(f)
 
-            agent = Agent(
+            agent = BaseAgent(
                 name='coder_agent',
                 model="claude-3-5-sonnet-20241022",
                 instructions=f'''
@@ -44,6 +43,8 @@ class CoderAgent:
     9. Add necessary imports automatically
     10. use this url for images https://picsum.photos/200/300?random=1, can you use random images in UI.
     11. add any new package in package.json file.
+    12. add json file in src/data folder.
+    13. don't add metadata in layout.tsx file.
 
     Return JSON format examples:
 

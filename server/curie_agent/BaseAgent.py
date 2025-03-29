@@ -3,13 +3,12 @@ import inspect
 from openai import AsyncAzureOpenAI, AsyncOpenAI
 from dotenv import load_dotenv
 from anthropic import AsyncAnthropic
-
 from tools.redis_cache import RedisCache
 
 load_dotenv()
 
 
-class Agent:
+class BaseAgent:
     @staticmethod
     def execute_tool_call(tool_call, tools_map):
         """Execute a tool call with the given arguments."""

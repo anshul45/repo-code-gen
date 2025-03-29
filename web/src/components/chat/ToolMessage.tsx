@@ -199,7 +199,7 @@ Please ensure the response is valid JSON.`,
         }
 
         try {
-          updateMountFile(parsedCode as FileNode);
+          updateMountFile(parsedCode as string);
           const updatedData = extractPathAndContent(parsedCode);
 
           const filePath = updatedData[0]?.path;

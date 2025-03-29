@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const { message, user_id, intent } = await req.json() as ChatRequest;
 
   try {
-    const response = await fetch('http://localhost:3001/chat', {
+    const response = await fetch('http://localhost:8000/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

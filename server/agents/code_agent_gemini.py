@@ -1,14 +1,14 @@
 import json
 import os
 
-from Azent.Azent import Agent
+from curie_agent.BaseAgent import BaseAgent
 
 
 class CoderAgentGemini:
     def __init__(self):
         self.active_sessions = {}
 
-    def get_or_create_agent(self, user_id: str) -> Agent:
+    def get_or_create_agent(self, user_id: str) -> BaseAgent:
         """Get existing agent or create new one for the user"""
 
         if user_id not in self.active_sessions:

@@ -4,8 +4,10 @@ export const bootWebContainer = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   files: any,
   setIsLoadingPreview: (loading: boolean) => void,
-  appendTerminal: (data: string) => void, // Add terminal output callback
-  setUrl:(url : string) => void
+  appendTerminal: (data: string) => void,
+  setUrl:(url : string) => void,
+  lockFile?: (filename: string) => void,
+  unlockFile?: (filename: string) => void
 ) => {
   console.log("Booting WebContainer...");
   
@@ -13,9 +15,31 @@ export const bootWebContainer = async (
     setIsLoadingPreview(true); 
     const webcontainerInstance = await WebContainer.boot();
     console.log("Mounting Files");
+    
+    // Prevent overwriting page.tsx during initial mount
+    // Check for page.tsx in any directory
+    Object.keys(files).forEach(key => {
+      if (key.endsWith('/page.tsx') || key === 'page.tsx') {
+        delete files[key];
+      }
+    });
+    
+    // Lock files before mounting
+    if (lockFile) {
+      Object.keys(files).forEach(key => {
+        lockFile(key);
+      });
+    }
 
     await webcontainerInstance.mount(files);
     console.log("Mounting Success");
+
+    // Unlock files after mounting
+    if (unlockFile) {
+      Object.keys(files).forEach(key => {
+        unlockFile(key);
+      });
+    }
 
     // Add terminal output for install process
     appendTerminal("📦 Installing dependencies...\n");

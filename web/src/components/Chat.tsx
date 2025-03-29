@@ -13,10 +13,9 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 export function Chat() {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
-  const [activeFile, setActiveFile] = useState<{ path: string; content: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
-  const { files, fileChanges, isMount, mountFile } = useFileStore();
+  const { files, fileChanges, isMount, mountFile, activeFile, setActiveFile, lockFile, unlockFile } = useFileStore();
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [command, setCommand] = useState("");
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
@@ -48,7 +47,7 @@ export function Chat() {
   useEffect(() => {
     const initialize = async () => {
       if (!webcontainer) {
-        const instance = await bootWebContainer(files, setIsLoadingPreview, appendTerminal,setUrl);
+        const instance = await bootWebContainer(files, setIsLoadingPreview, appendTerminal, setUrl, lockFile, unlockFile);
         setWebcontainer(instance);
 
         if (instance) {
@@ -86,16 +85,46 @@ export function Chat() {
 
   useEffect(() => {
     if (isMount && mountFile) {
-      webcontainer?.mount(JSON.parse(mountFile));
+      try {
+        const parsedFiles = JSON.parse(mountFile);
+        const filesToMount = { ...parsedFiles };
+        
+        // Lock files that will be modified
+        Object.keys(parsedFiles).forEach(key => {
+          lockFile(key);
+        });
+
+        if (Object.keys(filesToMount).length > 0) {
+          webcontainer?.mount(filesToMount).then(() => {
+            // Unlock files after mounting is complete
+            Object.keys(parsedFiles).forEach(key => {
+              unlockFile(key);
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing mount file:', error);
+        // Unlock all files in case of error
+        if (typeof mountFile === 'string') {
+          try {
+            const parsedFiles = JSON.parse(mountFile);
+            Object.keys(parsedFiles).forEach(key => {
+              unlockFile(key);
+            });
+          } catch (e) {
+            console.error('Error unlocking files:', e);
+          }
+        }
+      }
     }
-  }, [isMount]);
+  }, [isMount, mountFile, lockFile, unlockFile, webcontainer]);
 
 
   return (
     <div className="w-full flex h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900">
       {/* Left: Chat Preview */}
       <div className='flex-[3.5] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'>
-        <ChatPreview setActiveFile={setActiveFile} />
+        <ChatPreview setActiveFile={(file: { path: string; content: string } | null) => setActiveFile(file)} />
       </div>
 
       {/* Right: Tabs + Editor/Preview */}
@@ -127,7 +156,7 @@ export function Chat() {
                 <Panel defaultSize={80}>
                 <PanelGroup direction="horizontal">
                   <Panel defaultSize={20} minSize={20} maxSize={25}>
-                    <FileExplorer setActiveFile={setActiveFile} />
+                    <FileExplorer setActiveFile={(file: { path: string; content: string } | null) => setActiveFile(file)} />
                   </Panel>
                   <PanelResizeHandle className="w-[1px] bg-gray-200 dark:bg-gray-700" />
                   <Panel>

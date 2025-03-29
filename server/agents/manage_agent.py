@@ -4,20 +4,21 @@ from typing import Dict
 from dotenv import load_dotenv
 import json
 
-from Azent.Azent import Agent
 from cache.cache import RedisCache
 from tools import get_files_with_description
+from curie_agent.BaseAgent import BaseAgent
 
 
 class ManagerAgent:
     """Class to handle the conversation management using the custom Agent class"""
 
     def __init__(self):
+        self.project_details = None
         load_dotenv()
-        self.active_sessions: Dict[str, Agent] = {}
+        self.active_sessions: Dict[str, BaseAgent] = {}
         self.cache = RedisCache()
 
-    def get_or_create_agent(self, user_id: str) -> Agent:
+    def get_or_create_agent(self, user_id: str) -> BaseAgent:
         """Get existing agent or create new one for the user"""
         with open('/Users/abhilasha/Documents/chatbots/code-gen-bot/server/tools/base_template.json') as f:
             base_template = json.load(f)
@@ -27,7 +28,7 @@ class ManagerAgent:
             print("project details", self.project_details)
             print('parent dir', Path(__file__).resolve().parent.parent)
 
-            self.active_sessions[user_id] = Agent(
+            self.active_sessions[user_id] = BaseAgent(
                 name='manager agent',
                 model="gemini-2.0-flash",
                 instructions=f'''
@@ -51,6 +52,8 @@ class ManagerAgent:
                 - the application starts from from src/app/page.tsx as the main page. for example, if you are cereating a todo app, then the code should start from src/app/page.tsx where the todo app should start.
                 - don't add any landing page in the project.
                 - Don't use any database, simply CRUD operation stores in the memory data.
+                - If possible add sidebar in the project.
+                - Don't add many components but application should look good.
 
                 Available tools are:
                     - <get_files_with_description> : This tool will return the list of files which needs to be created or updated in the project.
