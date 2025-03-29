@@ -71,7 +71,7 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
           </div>
           <Download 
             size={16} 
-            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600" 
+            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600 mr-2" 
             onClick={(e) => {
               e.stopPropagation();
               const files: FileInfo[] = downloadDirectory(node, currentPath);
@@ -115,7 +115,7 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
           </div>
           <Download 
             size={16} 
-            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600" 
+            className="opacity-0 group-hover:opacity-100 cursor-pointer hover:text-blue-600 mr-2" 
             onClick={(e) => {
               e.stopPropagation();
               downloadFile(node.file.contents, getFileName(currentPath));

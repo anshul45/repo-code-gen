@@ -102,7 +102,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
   };
 
   return (
-    <div className="w-full flex flex-col h-[calc(100vh-120px)] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div className="w-full flex flex-col h-[calc(100vh-45px)] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       {/* Chat Messages */}
       <ScrollArea className="flex-1 px-6 py-4 w-full">
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">

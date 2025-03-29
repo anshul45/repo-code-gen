@@ -92,7 +92,7 @@ export function Chat() {
 
 
   return (
-    <div className="w-full flex h-[calc(100vh-100px)] px-4 pt-2 gap-4 bg-gray-100 dark:bg-gray-900">
+    <div className="w-full flex h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900">
       {/* Left: Chat Preview */}
       <div className='flex-[3.5] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'>
         <ChatPreview setActiveFile={setActiveFile} />
@@ -188,7 +188,7 @@ export function Chat() {
                 <iframe
                   src={url as string}
                   title="WebContainer"
-                  className="rounded-b-md w-full h-[calc(100vh-150px)]"
+                  className="rounded-b-md w-full h-[calc(100vh-143px)]"
                 />
               )} 
             </div>
