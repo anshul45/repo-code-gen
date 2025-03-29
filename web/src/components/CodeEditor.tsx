@@ -11,6 +11,9 @@ interface CodeEditorProps {
 }
 
 const CodeEditor = ({ data }: CodeEditorProps) => {
+
+   const { setActiveFile } = useFileStore();
+
   const { updateFile } = useFileStore();
   const { open } = useSidebar();
   const [displayContent, setDisplayContent] = useState<string>("");
@@ -19,6 +22,8 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
   
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
+
+  //Todo need to keep it stream untill it stream all data
   const streamContent = async (content: string) => {
     setIsStreaming(true);
     let currentContent = "";
@@ -50,13 +55,19 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
 
   useEffect(() => {
     if (data?.content) {
-      if (data.isNew) {
-        streamContent(data.content);
+      if (data.isNew && !isUserEditRef.current) {
+        streamContent(data.content).then(() => {
+          setActiveFile({ content: data.content, path: data.path, isNew: false });
+        });
       } else {
         setDisplayContent(data.content);
+        if (data.isNew) {
+          setActiveFile({ content: data.content, path: data.path, isNew: false });
+        }
       }
     }
-  }, [data?.content, data?.isNew]);
+  }, [data?.content, data?.isNew, data?.path]);
+  
 
   // Only set isUserEditRef to false when the file changes
   useEffect(() => {
@@ -102,10 +113,10 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
 
       {/* Monaco Editor */}
       <Editor
-        height="calc(100vh - 296px)"
+        height="calc(100vh - 230px)"
         width="100%"
         language={language}
-        value={displayContent}
+        value={data.content}
         onMount={(editor: editor.IStandaloneCodeEditor) => {
           editorRef.current = editor;
         }}

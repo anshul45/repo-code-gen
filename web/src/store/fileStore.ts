@@ -23,8 +23,8 @@ interface FileState {
   isMount: boolean;
   mountFile: string | null;
   updateMountFile: (file: string) => void;
-  activeFile: { path: string; content: string } | null;
-  setActiveFile: (file: { path: string; content: string } | null) => void;
+  activeFile: { path: string; content: string; isNew : boolean  } | null;
+  setActiveFile: (file: { path: string; content: string; isNew : boolean } | null) => void;
   lockedFiles: Set<string>;
   lockFile: (filename: string) => void;
   unlockFile: (filename: string) => void;

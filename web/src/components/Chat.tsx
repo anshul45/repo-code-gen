@@ -124,7 +124,7 @@ export function Chat() {
     <div className="w-full flex h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900">
       {/* Left: Chat Preview */}
       <div className='flex-[3.5] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'>
-        <ChatPreview setActiveFile={(file: { path: string; content: string } | null) => setActiveFile(file)} />
+      <ChatPreview setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
       </div>
 
       {/* Right: Tabs + Editor/Preview */}
@@ -156,10 +156,10 @@ export function Chat() {
                 <Panel defaultSize={80}>
                 <PanelGroup direction="horizontal">
                   <Panel defaultSize={20} minSize={20} maxSize={25}>
-                    <FileExplorer setActiveFile={(file: { path: string; content: string } | null) => setActiveFile(file)} />
+                    <FileExplorer setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
                   </Panel>
                   <PanelResizeHandle className="w-[1px] bg-gray-200 dark:bg-gray-700" />
-                  <Panel>
+                  <Panel defaultSize={80}>
                     <CodeEditor data={activeFile} />
                   </Panel>
                   </PanelGroup>
