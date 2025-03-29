@@ -1,5 +1,5 @@
 .env
-
+.idea
 venv/
 __pycache__/
 server/venv
