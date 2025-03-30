@@ -37,7 +37,7 @@ const Terminal = ({
   }, [output]);
 
   return (
-    <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100vh-500px)] flex flex-col rounded-b-xl">
+    <div className="bg-black text-green-400 font-mono text-sm p-3 h-[calc(100vh-483px)] flex flex-col rounded-b-xl">
       <div className="flex-1 overflow-y-auto mb-1 text-xs">
         {output.map((line, idx) => (
           <div
