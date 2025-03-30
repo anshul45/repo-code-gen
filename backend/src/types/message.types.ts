@@ -5,6 +5,7 @@ export enum MessageType {
   CODE = 'code',
   TEXT = 'text',
   ERROR = 'error',
+  UI_REFERENCE = 'ui-reference',
 }
 
 export interface Message {
@@ -18,6 +19,7 @@ export interface Message {
       arguments: string;
     };
   }[];
+  tool_call_id?: string;
   type?: MessageType;
   agent_name?: string;
 }
