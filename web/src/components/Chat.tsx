@@ -29,6 +29,7 @@ export function Chat() {
     }
   };
 
+
   const clearTerminal = () => {
     setTerminalOutput([]); 
   };
@@ -160,7 +161,7 @@ export function Chat() {
                   </Panel>
                   <PanelResizeHandle className="w-[1px] bg-gray-200 dark:bg-gray-700" />
                   <Panel defaultSize={80}>
-                    <CodeEditor data={activeFile} />
+                    <CodeEditor />
                   </Panel>
                   </PanelGroup>
                 </Panel>

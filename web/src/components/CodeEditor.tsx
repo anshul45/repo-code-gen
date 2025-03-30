@@ -6,26 +6,26 @@ import type { editor } from 'monaco-editor';
 import { useFileStore } from "@/store/fileStore";
 import { useSidebar } from "@/components/ui/sidebar";
 
-interface CodeEditorProps {
-  data: { path: string; content: string; isNew?: boolean } | null;
-}
 
-const CodeEditor = ({ data }: CodeEditorProps) => {
 
-   const { setActiveFile } = useFileStore();
+const CodeEditor = () => {
+
+   const { setActiveFile,activeFile } = useFileStore();
 
   const { updateFile } = useFileStore();
   const { open } = useSidebar();
   const [displayContent, setDisplayContent] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingFile, setStreamingFile] = useState<string | null>(null);
   const isUserEditRef = useRef(false);
   
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
 
-  //Todo need to keep it stream untill it stream all data
-  const streamContent = async (content: string) => {
+  //Todo need to keep it stream untill it stream all activeFile
+  const streamContent = async ( content: string, path: string ) => {
     setIsStreaming(true);
+    setStreamingFile(activeFile && activeFile.path || "");
     let currentContent = "";
     const chunkSize = 25; // Process smaller chunks for smoother scrolling
     
@@ -49,32 +49,39 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
       // Small delay between chunks for visible effect
       await new Promise(resolve => setTimeout(resolve, 5)); // Slightly longer delay for smoother animation
     }
+
+    if (streamingFile === path) {
+      setIsStreaming(false);
+      setStreamingFile(null);
+      setActiveFile({ content,path, isNew: false });
+      updateFile(path, content);
+    }
     
     setIsStreaming(false);
   };
 
   useEffect(() => {
-    if (data?.content) {
-      if (data.isNew && !isUserEditRef.current) {
-        streamContent(data.content).then(() => {
-          setActiveFile({ content: data.content, path: data.path, isNew: false });
+    if (activeFile?.content) {
+      if (activeFile.isNew && !isUserEditRef.current) {
+        streamContent(activeFile.content, activeFile.path).then(() => {
+          setActiveFile({ content: activeFile.content, path: activeFile.path, isNew: false });
         });
       } else {
-        setDisplayContent(data.content);
-        if (data.isNew) {
-          setActiveFile({ content: data.content, path: data.path, isNew: false });
+        setDisplayContent(activeFile.content);
+        if (activeFile.isNew) {
+          setActiveFile({ content: activeFile.content, path: activeFile.path, isNew: false });
         }
       }
     }
-  }, [data?.content, data?.isNew, data?.path]);
+  }, [activeFile?.content, activeFile?.isNew, activeFile?.path]);
   
 
   // Only set isUserEditRef to false when the file changes
   useEffect(() => {
     isUserEditRef.current = false;
-  }, [data?.path]);
+  }, [activeFile?.path]);
 
-  const fileExtension = data?.path?.split(".").pop() || "plaintext";
+  const fileExtension = activeFile?.path?.split(".").pop() || "plaintext";
   const supportedLanguages = [
     "javascript",
     "typescript",
@@ -88,15 +95,16 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
   const language = supportedLanguages.includes(fileExtension) ? fileExtension : "plaintext";
 
   const handleEditorChange = (newValue: string | undefined) => {
-    if (newValue !== undefined && data?.path) {
+    if (newValue !== undefined && activeFile?.path) {
       isUserEditRef.current = true;
       setDisplayContent(newValue);
-      updateFile(data.path, newValue);
+      setActiveFile({path :activeFile.path, content:newValue,isNew:false});
+      updateFile(activeFile.path, newValue);
     }
   };
 
 
-  if (!data) {
+  if (!activeFile) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         {open ? "Select a file to start editing" : "Open a file to start editing"}
@@ -108,7 +116,7 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
     <div className="border-t-[1px]">
       {/* File path header */}
       <div className="border-b-[1px] mb-2 pl-2 py-1 text-sm bg-gray-50 dark:bg-gray-800">
-        📄 {data.path}
+        📄 {activeFile.path}
       </div>
 
       {/* Monaco Editor */}
@@ -116,7 +124,7 @@ const CodeEditor = ({ data }: CodeEditorProps) => {
         height="calc(100vh - 230px)"
         width="100%"
         language={language}
-        value={data.content}
+        value={displayContent}
         onMount={(editor: editor.IStandaloneCodeEditor) => {
           editorRef.current = editor;
         }}
