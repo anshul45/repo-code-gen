@@ -15,7 +15,7 @@ export function Chat() {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
-  const { files, fileChanges, isMount, mountFile, activeFile, setActiveFile, lockFile, unlockFile } = useFileStore();
+  const { files, fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = useFileStore();
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [command, setCommand] = useState("");
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);

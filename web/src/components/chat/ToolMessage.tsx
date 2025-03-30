@@ -106,7 +106,6 @@ const ToolMessage = ({ message, setSelectedMessage, setActiveFile }: ToolMessage
             message: `Generate ${file.file_path} , Description ${file.description}. 
 Important: Ensure the following for React/TypeScript components:
 1. Use proper import paths with @/ prefix (e.g., '@/components/ui/button')
-2. Add 'use client' directive at the top for client components
 3. Use proper TypeScript types and interfaces
 4. Follow React best practices and patterns`,
             user_id: localStorage.getItem('chatUserId'),
@@ -133,11 +132,13 @@ Important: Ensure the following for React/TypeScript components:
             const value = obj[key];
 
             if (key === 'file' && typeof value === 'object' && value !== null) {
+              console.log(key, currentPath, value);
               const fileValue = value as FileValue;
               if (fileValue.contents !== undefined) {
                 result.push({ path: currentPath, contents: fileValue.contents });
               }
             } else if (typeof value === 'object' && value !== null) {
+              console.log(key, currentPath, value);
               const newPath = key === 'directory' ? currentPath : (currentPath ? `${currentPath}/${key}` : key);
               result.push(...extractPathAndContent(value as Record<string, unknown>, newPath));
             }
@@ -154,8 +155,19 @@ Important: Ensure the following for React/TypeScript components:
         }
 
         let parsedCode;
+        console.log("latestCode", latestCode);
         try {
-          parsedCode = JSON.parse(latestCode);
+          if (typeof data === 'string') {
+            try {
+              parsedCode = JSON.parse(latestCode);
+            } catch (e) {
+              console.error("Invalid JSON string:", e);
+              return null;
+            }
+          }
+          else {
+            parsedCode = latestCode;
+          }
         } catch (error) {
           console.error('Error parsing generated code:', error);
           appendTerminal("❌ Generated code is not in valid JSON format\n");
@@ -169,7 +181,6 @@ Important: Ensure the following for React/TypeScript components:
               message: `Generate ${file.file_path} , Description ${file.description}. 
 Important: Ensure the following for React/TypeScript components:
 1. Use proper import paths with @/ prefix (e.g., '@/components/ui/button')
-2. Add 'use client' directive at the top for client components
 3. Use proper TypeScript types and interfaces
 4. Follow React best practices and patterns
 Please ensure the response is valid JSON.`,
@@ -199,7 +210,7 @@ Please ensure the response is valid JSON.`,
         }
 
         try {
-          updateMountFile(parsedCode as string);
+          updateMountFile(JSON.stringify(parsedCode));
           const updatedData = extractPathAndContent(parsedCode);
 
           const filePath = updatedData[0]?.path;
@@ -215,7 +226,7 @@ Please ensure the response is valid JSON.`,
             // Add UI components first if they don't exist
             const requiredComponents = ['button', 'input'];
             for (const comp of requiredComponents) {
-              const uiPath = `components/ui/${comp}.tsx`;
+              const uiPath = `src/components/ui/${comp}.tsx`;
               if (!files[uiPath]) {
                 const uiContent = ((templateFiles as unknown as NestedDirectory)
                   ?.src?.directory?.components?.directory?.ui?.directory?.[`${comp}.tsx`] as FileContent | undefined)?.file?.contents;
@@ -234,7 +245,7 @@ Please ensure the response is valid JSON.`,
           fileContent = fileContent.replace(/from ['"]hooks\//g, "from '@/hooks/");
 
           // Ensure 'use client' directive for client components
-          if (filePath.endsWith('.tsx') && !fileContent.startsWith("'use client'")) {
+          if (filePath.endsWith('.tsx') && !fileContent.includes("use client")) {
             fileContent = "'use client';\n\n" + fileContent;
           }
 
@@ -243,7 +254,7 @@ Please ensure the response is valid JSON.`,
             const utilsContent = ((templateFiles as unknown as NestedDirectory)
               ?.src?.directory?.lib?.directory?.['utils.ts'] as FileContent | undefined)?.file?.contents;
             if (utilsContent) {
-              addFile('lib/utils.ts', utilsContent);
+              addFile('src/lib/utils.ts', utilsContent);
               setFiles(prev => ({ ...prev, ['lib/utils.ts']: { file: { contents: utilsContent } } }));
               appendTerminal(`✅ Added utils library\n`);
             }
@@ -302,7 +313,7 @@ Please ensure the response is valid JSON.`,
     <div className="p-5 border-[1px] rounded-md text-sm bg-gray-100 max-w-full">
       <div className='bg-white border-[1px] rounded-sm'>
         <div className='border-b-2 p-3 text-[15px] font-semibold'>Files to be Created.</div>
-        {message.map((file, idx) => (
+        {message && message.length > 0 && message.map((file, idx) => (
           <PreviewFiles 
             key={idx} 
             file={file} 
