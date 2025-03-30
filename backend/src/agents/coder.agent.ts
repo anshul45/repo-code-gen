@@ -29,20 +29,39 @@ export class CoderAgent {
         fs.readFileSync(baseTemplatePath, 'utf-8'),
       );
 
+      const uiComponentsMd = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'prompts', 'ui_components.md'),
+        'utf-8',
+      );
+
+      const lucidReactComponents = fs.readFileSync(
+        path.join(
+          process.cwd(),
+          'src',
+          'prompts',
+          'lucid_react_components.txt',
+        ),
+        'utf-8',
+      );
+
       const agent = new BaseAgent(
         this.configService,
         this.redisCacheService,
         'coder_agent',
-        'claude-3-5-sonnet-20241022',
+        'claude-3-7-sonnet-20250219',
         fs
           .readFileSync(
             path.join(process.cwd(), 'src', 'prompts', 'coder-agent.prompt.md'),
             'utf-8',
           )
-          .replace('{base_template}', JSON.stringify(baseTemplate)),
+          .replace('{base_template}', JSON.stringify(baseTemplate))
+          .replace('{ui_components}', uiComponentsMd)
+          .replace('{lucid_react_components}', lucidReactComponents),
         userId,
         0.6,
         [],
+        this.configService.get('ANTHROPIC_API_URL'),
+        this.configService.get('ANTHROPIC_API_KEY'),
         'anthropic',
       );
 
@@ -55,7 +74,7 @@ export class CoderAgent {
   async generateResponse(message: string, userId: string): Promise<Message[]> {
     try {
       const agent = await this.getOrCreateAgent(userId);
-      const thread = await agent.run(message);
+      const thread = await agent.run(message, 'json');
       return thread.filter((msg) => msg.role !== 'system');
     } catch (error) {
       console.error('Error generating response:', error);

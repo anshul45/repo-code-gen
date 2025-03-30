@@ -2,16 +2,17 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { ConfigService } from '@nestjs/config';
-import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionSystemMessageParam,
+  ChatCompletionUserMessageParam,
+  ChatCompletionAssistantMessageParam,
+  ChatCompletionToolMessageParam,
+} from 'openai/resources/chat/completions';
 import { RedisCacheService } from 'src/redis/redis.service';
 import { MessageType } from 'src/types/message.types';
-
-interface AnthropicContent {
-  type: 'text';
-  text: string;
-}
-
-type ResponseFormat = ChatCompletionCreateParamsBase['response_format'];
+import { jsonrepair } from 'jsonrepair';
+import { parse } from 'json5';
 
 export interface Tool {
   name: string;
@@ -28,13 +29,31 @@ interface ToolCall {
   };
 }
 
-export interface Message {
-  role: string;
-  content: string | null;
-  tool_calls?: ToolCall[];
+type MessageRole = 'system' | 'user' | 'assistant' | 'tool' | 'function';
+
+export interface BaseMessage {
+  role: MessageRole;
   type?: string;
   agent_name?: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
 }
+
+export interface TextMessage extends BaseMessage {
+  content: string | null;
+}
+
+export interface ContentPartsMessage extends BaseMessage {
+  content: ChatCompletionContentPart[];
+}
+
+export type Message = TextMessage | ContentPartsMessage;
+
+type ChatMessage =
+  | ChatCompletionSystemMessageParam
+  | ChatCompletionUserMessageParam
+  | ChatCompletionAssistantMessageParam
+  | ChatCompletionToolMessageParam;
 
 interface FunctionSchema {
   type: 'function';
@@ -65,6 +84,8 @@ export class BaseAgent {
     protected readonly sessionId: string | null = null,
     protected readonly temperature: number = 1,
     protected readonly tools: Tool[] = [],
+    protected readonly base_url: string | null = null,
+    protected readonly api_key: string | null = null,
     protected readonly clientType: string = 'openai',
   ) {
     if (this.clientType === 'anthropic') {
@@ -73,8 +94,8 @@ export class BaseAgent {
       });
     } else {
       this.client = new OpenAI({
-        baseURL: this.configService.get('LLM_BASE_URL'),
-        apiKey: this.configService.get('LLM_API_KEY'),
+        baseURL: base_url || this.configService.get('LLM_BASE_URL'),
+        apiKey: api_key || this.configService.get('LLM_API_KEY'),
       });
     }
 
@@ -88,7 +109,6 @@ export class BaseAgent {
       );
     }
 
-    // Initialize thread with default values
     this.thread = [{ role: 'system', content: this.instructions }];
     this.overallThread = [{ role: 'system', content: this.instructions }];
   }
@@ -123,7 +143,7 @@ export class BaseAgent {
         parameters: {
           type: 'object',
           properties: parameters,
-          required: params.filter((p) => p !== ''), // All params are required by default
+          required: params.filter((p) => p !== ''),
         },
       },
     };
@@ -133,13 +153,58 @@ export class BaseAgent {
     return this.tools.map((tool) => this.functionToSchema(tool));
   }
 
+  protected convertToOpenAIMessage(msg: Message): ChatMessage {
+    if (Array.isArray(msg.content)) {
+      return {
+        role: msg.role,
+        content: msg.content,
+      } as ChatCompletionUserMessageParam;
+    }
+
+    const baseMessage = {
+      role: msg.role,
+      content: msg.content || '',
+    };
+
+    if (msg.tool_calls) {
+      return {
+        ...baseMessage,
+        tool_calls: msg.tool_calls,
+        tool_call_id: msg.tool_call_id,
+      } as ChatCompletionAssistantMessageParam;
+    }
+
+    if (msg.tool_call_id) {
+      return {
+        ...baseMessage,
+        tool_call_id: msg.tool_call_id,
+      } as ChatCompletionToolMessageParam;
+    }
+
+    return baseMessage as ChatMessage;
+  }
+
+  robustJSONParse(input: string): any {
+    try {
+      const clean = input.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
+
+      const repaired = jsonrepair(clean);
+
+      return parse(repaired);
+    } catch (e) {
+      // Final fallback: Manual inspection
+      console.error('JSON parse failed after repairs:');
+      console.error(input);
+      throw e;
+    }
+  }
+
   async run(
     query: string,
-    responseFormat?: ResponseFormat,
+    responseFormat?: string,
     maxToolCalls = 1,
   ): Promise<Message[]> {
     try {
-      // Load from cache if available
       this.thread = (await this.redisCacheService.get<Message[]>(
         `${this.name}${this.sessionId}`,
       )) || [{ role: 'system', content: this.instructions }];
@@ -156,7 +221,7 @@ export class BaseAgent {
           const anthropicClient = this.client as Anthropic;
           const response = await anthropicClient.messages.create({
             model: this.model,
-            max_tokens: 8192,
+            max_tokens: 20000,
             messages: [
               {
                 role: 'user',
@@ -166,11 +231,12 @@ export class BaseAgent {
             system: this.instructions,
           });
 
-          const message = (response.content[0] as AnthropicContent).text;
+          const message = (response.content[0] as any).text;
+          const cleanResponse = this.robustJSONParse(message);
           const assistantMessage: Message = {
             role: 'assistant',
             content: JSON.stringify({
-              message: message,
+              message: cleanResponse,
               type: MessageType.CODE,
             }),
           };
@@ -186,7 +252,8 @@ export class BaseAgent {
             model: this.model,
             messages: this.thread as any,
             temperature: this.temperature,
-            response_format: responseFormat,
+            response_format:
+              responseFormat === 'json' ? { type: 'json_object' } : undefined,
           });
 
           const message = response.choices[0].message.content;
@@ -208,17 +275,14 @@ export class BaseAgent {
       let toolCallCount = 0;
 
       while (toolCallCount < maxToolCalls) {
-        if (this.clientType === 'anthropic') {
-          throw new Error('Tool calls are not yet supported with Anthropic');
-        }
-
         const openaiClient = this.client as OpenAI;
         const response = await openaiClient.chat.completions.create({
           model: this.model,
-          messages: this.thread as any,
+          messages: this.thread.map(this.convertToOpenAIMessage),
           tools: toolSchemas,
           temperature: this.temperature,
-          response_format: responseFormat,
+          response_format:
+            responseFormat === 'json' ? { type: 'json_object' } : undefined,
         });
 
         const message = response.choices[0].message;
@@ -254,16 +318,61 @@ export class BaseAgent {
               const result = await this.executeToolCall(toolCall);
               const toolResponse: Message = {
                 role: 'tool',
+                tool_call_id: toolCall.id,
                 content: result ? JSON.stringify(result) : '{}',
                 type: this.getToolResponseType(toolCall.function.name),
                 agent_name: this.name,
               };
+
+              // Add tool response to thread
               this.thread.push(toolResponse);
               this.overallThread.push(toolResponse);
+
+              // If this is an image search result, feed it back to LLM for analysis and code generation
+              if (toolCall.function.name === 'search_image') {
+                const imageResult = JSON.parse(toolResponse.content);
+
+                const messages: ChatMessage[] = [
+                  ...this.thread.map(this.convertToOpenAIMessage),
+                  {
+                    role: 'user',
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Use this UI reference:`,
+                      },
+                      {
+                        type: 'image_url',
+                        image_url: {
+                          url: imageResult.imageUrl,
+                        },
+                      },
+                    ],
+                  },
+                ];
+
+                const response = await openaiClient.chat.completions.create({
+                  model: this.model,
+                  messages,
+                  tools: toolSchemas,
+                  temperature: this.temperature,
+                });
+
+                const message = response.choices[0].message;
+                const assistantMessage: Message = {
+                  role: 'assistant',
+                  content: message.content,
+                  type: MessageType.TEXT,
+                  agent_name: this.name,
+                };
+                this.thread.push(assistantMessage);
+                this.overallThread.push(assistantMessage);
+              }
             } catch (error) {
               console.error(`Tool execution error: ${error}`);
               const toolResponse: Message = {
                 role: 'tool',
+                tool_call_id: toolCall.id,
                 content: JSON.stringify({ error: error.message }),
                 type: MessageType.ERROR,
                 agent_name: this.name,
@@ -275,7 +384,6 @@ export class BaseAgent {
             console.warn(`Warning: Tool ${toolCall.function.name} not found!`);
           }
         }
-
         toolCallCount++;
       }
 
@@ -293,6 +401,9 @@ export class BaseAgent {
     }
     if (['get_button'].includes(toolName)) {
       return MessageType.JSON_BUTTON;
+    }
+    if (toolName === 'search_image') {
+      return MessageType.UI_REFERENCE;
     }
     if (this.name === 'coder_agent') {
       return MessageType.CODE;
