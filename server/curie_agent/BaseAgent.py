@@ -141,8 +141,8 @@ class BaseAgent:
                 if self.client_type == 'anthropic':
 
                     response = await self.client.messages.create(
-                        model='claude-3-5-sonnet-latest',
-                        max_tokens=8192,
+                        model='claude-3-7-sonnet-20250219',
+                        max_tokens=20000,
                         messages=[
                             {
                                 "role": "user",

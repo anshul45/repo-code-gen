@@ -54,6 +54,10 @@ class ManagerAgent:
                 - Don't use any database, simply CRUD operation stores in the memory data.
                 - If possible add sidebar in the project.
                 - Don't add many components but application should look good.
+                - The UI components are in src/app/components/ui folder.
+                - The lib components are in src/lib folder.
+                - The shadcn UI components are already available in the project.
+                - Make UI colourful but professional.
 
                 Available tools are:
                     - <get_files_with_description> : This tool will return the list of files which needs to be created or updated in the project.

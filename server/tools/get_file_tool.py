@@ -1,8 +1,8 @@
 from opik.integrations.openai import track_openai
 from opik import track
 import os
-from agents.embeddings_agent import EmbeddingsAgent
-from agents.file_summary_agent import FileSummaryAgent
+from curie.embeddings_agent import EmbeddingsAgent
+from curie.file_summary_agent import FileSummaryAgent
 from cache.cache import RedisCache
 from clients.pinecone_client import PineconeClient
 

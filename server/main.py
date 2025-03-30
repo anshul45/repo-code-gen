@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from agents.manage_agent import ManagerAgent
+from curie.manage_agent import ManagerAgent
 from typing import Dict
 import json
 
-from agents.coder_agent import CoderAgent
-from agents.code_agent_gemini import CoderAgentGemini
+from curie.coder_agent import CoderAgent
+from curie.code_agent_gemini import CoderAgentGemini
 
 app = FastAPI()
 coder_agent = CoderAgent()

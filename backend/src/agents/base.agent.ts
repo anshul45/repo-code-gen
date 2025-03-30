@@ -52,8 +52,8 @@ interface FunctionSchema {
 @Injectable()
 export class BaseAgent {
   protected client: OpenAI | Anthropic;
-  protected thread: Message[] = [];
-  protected overallThread: Message[] = [];
+  protected thread!: Message[];
+  protected overallThread!: Message[];
   protected toolsMap: Record<string, Tool['execute']> = {};
 
   constructor(
@@ -88,22 +88,9 @@ export class BaseAgent {
       );
     }
 
-    this.initializeThread();
-  }
-
-  private async initializeThread(): Promise<void> {
-    if (this.sessionId) {
-      this.thread = (await this.redisCacheService.get(
-        `${this.name}${this.sessionId}`,
-      )) || [{ role: 'system', content: this.instructions }];
-
-      this.overallThread = (await this.redisCacheService.get(
-        `conversation:${this.sessionId}`,
-      )) || [{ role: 'system', content: this.instructions }];
-    } else {
-      this.thread = [{ role: 'system', content: this.instructions }];
-      this.overallThread = [{ role: 'system', content: this.instructions }];
-    }
+    // Initialize thread with default values
+    this.thread = [{ role: 'system', content: this.instructions }];
+    this.overallThread = [{ role: 'system', content: this.instructions }];
   }
 
   protected executeToolCall(toolCall: ToolCall): any {
@@ -152,6 +139,15 @@ export class BaseAgent {
     maxToolCalls = 1,
   ): Promise<Message[]> {
     try {
+      // Load from cache if available
+      this.thread = (await this.redisCacheService.get<Message[]>(
+        `${this.name}${this.sessionId}`,
+      )) || [{ role: 'system', content: this.instructions }];
+
+      this.overallThread = (await this.redisCacheService.get<Message[]>(
+        `conversation:${this.sessionId}`,
+      )) || [{ role: 'system', content: this.instructions }];
+
       this.thread.push({ role: 'user', content: query });
       this.overallThread.push({ role: 'user', content: query });
 
