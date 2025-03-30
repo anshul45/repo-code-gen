@@ -5,10 +5,11 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { ChatService } from './chat.service';
+import { Message } from '../agents/base.agent';
 import { ManagerAgent } from '../agents/manager.agent';
 import { CoderAgent } from '../agents/coder.agent';
-import { Message } from '../agents/base.agent';
+import { EditorAgent } from '../agents/editor.agent';
+import { RouterAgent } from '../agents/router.agent';
 
 enum MessageType {
   JSON = 'json',
@@ -32,14 +33,15 @@ interface ChatResponse {
 @Controller('chat')
 export class ChatController {
   constructor(
-    private readonly chatService: ChatService,
+    private readonly routerAgent: RouterAgent,
     private readonly managerAgent: ManagerAgent,
+    private readonly editorAgent: EditorAgent,
     private readonly coderAgent: CoderAgent,
   ) {}
 
   @Post()
   async chat(@Body() body: ChatRequest): Promise<ChatResponse> {
-    const { message, user_id, intent } = body;
+    const { message, user_id } = body;
 
     if (!message || !user_id) {
       throw new HttpException(
@@ -49,14 +51,22 @@ export class ChatController {
     }
 
     try {
+      // First, use the router agent to determine which agent should handle the request
+      const routing = await this.routerAgent.routeQuery(message, user_id);
       let result;
 
-      if (intent === MessageType.CODE) {
-        // Use coder agent for code generation
-        result = await this.coderAgent.generateResponse(message, user_id);
-      } else {
-        // Use manager agent for planning and file management
-        result = await this.managerAgent.generateResponse(message, user_id);
+      switch (routing.category) {
+        case 'manager_agent':
+          result = await this.managerAgent.generateResponse(message, user_id);
+          break;
+        case 'editor_agent':
+          result = await this.editorAgent.generateResponse(message, user_id);
+          break;
+        case 'coder_agent':
+          result = await this.coderAgent.generateResponse(message, user_id);
+          break;
+        default:
+          throw new Error('Invalid routing category');
       }
 
       if (result && result.length > 0) {
