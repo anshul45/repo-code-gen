@@ -6,15 +6,6 @@ import type {
   ChatCompletion,
 } from 'openai/resources/chat/completions';
 
-type OutputFormat = {
-  type: 'text' | 'json_object';
-  json_schema?: {
-    type: 'object';
-    properties: Record<string, any>;
-    required?: string[];
-  };
-};
-
 @Injectable()
 export class SimpleAgent {
   private client: OpenAI;
@@ -23,7 +14,7 @@ export class SimpleAgent {
   constructor(
     private readonly configService: ConfigService,
     private readonly systemPrompt: string,
-    private readonly outputFormat?: OutputFormat,
+    private readonly outputFormat?: string,
     private readonly baseUrl?: string,
     private readonly apiKey?: string,
     private readonly modelName?: string,
@@ -52,27 +43,16 @@ export class SimpleAgent {
         },
       ],
       temperature: this.temperature,
+      response_format:
+        this.outputFormat === 'json' ? { type: 'json_object' } : undefined,
     };
-
-    if (this.outputFormat) {
-      completionArgs.response_format = {
-        type: this.outputFormat.type,
-        ...(this.outputFormat.json_schema && {
-          schema: this.outputFormat.json_schema,
-        }),
-      };
-    }
 
     const response = (await this.client.chat.completions.create(
       completionArgs,
     )) as ChatCompletion;
     const content = response.choices[0].message.content;
 
-    if (
-      this.outputFormat &&
-      this.outputFormat.type === 'json_object' &&
-      content
-    ) {
+    if (this.outputFormat && this.outputFormat === 'json' && content) {
       // Clean up any markdown formatting that might be present
       const cleanResponse = content.replace(/```json\n?|\n?```/g, '');
       return JSON.parse(cleanResponse);
@@ -88,7 +68,7 @@ export class SimpleAgent {
     configService: ConfigService,
     systemPrompt: string,
     options: {
-      outputFormat?: OutputFormat;
+      outputFormat?: string;
       baseUrl?: string;
       apiKey?: string;
       model?: string;
