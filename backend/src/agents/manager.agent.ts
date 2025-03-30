@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { RedisCacheService } from 'src/redis/redis.service';
 import { BaseAgent, Message, Tool } from './base.agent';
 import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description.tool';
+import { ImageSearchTool } from '../tools/image-search/image-search.tool';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,6 +15,7 @@ export class ManagerAgent {
     private readonly configService: ConfigService,
     private readonly redisCacheService: RedisCacheService,
     private readonly getFilesWithDescriptionTool: GetFilesWithDescriptionTool,
+    private readonly imageSearchTool: ImageSearchTool,
   ) {
     this.activeSessions = new Map();
   }
@@ -38,13 +40,19 @@ export class ManagerAgent {
           execute: (problemStatement: string) =>
             this.getFilesWithDescriptionTool.execute(problemStatement),
         },
+        {
+          name: 'search_image',
+          description:
+            'Search for an image using Google Custom Search to get inspiration for UI',
+          execute: (query: string) => this.imageSearchTool.execute(query),
+        },
       ];
 
       const agent = new BaseAgent(
         this.configService,
         this.redisCacheService,
         'manager_agent',
-        'gemini-2.0-flash',
+        'gpt-4o',
         fs
           .readFileSync(
             path.join(
@@ -59,6 +67,9 @@ export class ManagerAgent {
         userId,
         0.6,
         tools,
+        this.configService.get('OPENAI_BASE_URL'),
+        this.configService.get('OPENAI_API_KEY'),
+        'openai',
       );
 
       this.activeSessions.set(userId, agent);

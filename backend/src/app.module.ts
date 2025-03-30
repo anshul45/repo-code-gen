@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ChatModule } from './chat/chat.module';
 import { RedisCacheModule } from './redis/redis.module';
+import { ImageSearchModule } from './tools/image-search/image-search.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { RedisCacheModule } from './redis/redis.module';
     }),
     ChatModule,
     RedisCacheModule,
+    ImageSearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
