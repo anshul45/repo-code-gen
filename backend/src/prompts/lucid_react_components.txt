@@ -1,0 +1,10 @@
+Activity, Airplay, AlarmCheck, AlertCircle, AlignCenter, Anchor, Archive, ArrowDown, ArrowLeft, ArrowRight, 
+AtSign, Award, Baby, BarChart, Battery, Bell, Bluetooth, Bold, Book, Bookmark, Box, Briefcase, Calendar, Camera, 
+Cast, Check, CheckCircle, ChevronDown, Clock, Code, Command, Copy, CreditCard, Crop, Crosshair, Database, Delete, 
+DollarSign, Download, Edit, ExternalLink, Eye, Facebook, FastForward, File, Film, Filter, Flag, Folder, Gift, 
+GitHub, Globe, Grid, HardDrive, Headphones, Heart, Home, Image, Inbox, Info, Instagram, Italic, Key, Laptop, Layers, 
+Layout, LifeBuoy, Link, List, Loader, Lock, Mail, MapPin, Maximize, Menu, MessageCircle, Mic, Minimize, Minus, 
+Monitor, Moon, MousePointer, Music, Navigation, Package, Paperclip, Pause, Phone, Play, Plus, Pocket, Power, Printer, 
+Radio, RefreshCw, Repeat, RotateCcw, Save, Search, Send, Settings, Share, Shield, ShoppingCart, SkipBack, Sliders, 
+Smile, Speaker, Square, Star, StopCircle, Sun, Tag, Target, Terminal, Thermometer, ThumbsUp, Trash, TrendingUp, 
+Twitter, Underline, Unlock, Upload, User, Video, Volume, Wifi, X, Zap, ZoomIn, ZoomOut
