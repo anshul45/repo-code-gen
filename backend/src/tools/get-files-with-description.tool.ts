@@ -34,25 +34,34 @@ The **base_template** is already set up with **Next.js 14 App Router**, **Radix 
 Your task is to **expand the application** by adding **routes, components, layouts, styling and features** as required. 
 You will be provided with the plan for a micro application which needs to implemented, understand it and create which files need to be created and provide the description of what needs to be done in those files for implementation purposes.
 
-**IMPORTANT POINTS:**
+# IMPORTANT POINTS:
     - the code should use src/app/page.tsx as the main page or any app should start from this page. for example, if you are cereating a todo app, then the code should start from src/app/page.tsx where the todo app should start.
     - The UI page .tsx file should be inside folder in the app directory.
     - the api file is .route.ts file and should be inside folder in the api directory.
+    - the components are basic building blocks so please keep the components at the top of the files.
+
+# FileName Conventions:
+1. Customer components should be in src/components/ folder and has PascalCase naming convention for example MusicPlayer.tsx
     
 OUTPUT JSON FORMAT:
     {
         "files": [
             {
-                "file_path": 'src/app/api/chat/route.ts',
+                "file_path": 'src/components/Sidebar.tsx',
                 "description": <description>,
-            }
+            },
+            {
+                "file_path": 'src/components/MusicPlayer.tsx',
+                "description": <description>,
+            },
+            ...
         ]
     }
 
 [base_template]
 ${JSON.stringify(baseTemplate)}`,
       {
-        outputFormat: { type: 'json_object' },
+        outputFormat: 'json',
         baseUrl: this.configService.get('LLM_BASE_URL'),
         apiKey: this.configService.get('LLM_API_KEY'),
         model: this.configService.get('LLM_MODEL', 'gemini-2.0-flash'),
