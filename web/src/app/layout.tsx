@@ -1,7 +1,5 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import Header from "@/components/Header"
 import { Providers } from "@/components/providers";
 
