@@ -84,8 +84,8 @@ export class BaseAgent {
     protected readonly sessionId: string | null = null,
     protected readonly temperature: number = 1,
     protected readonly tools: Tool[] = [],
-    protected readonly base_url: string | null = null,
-    protected readonly api_key: string | null = null,
+    protected readonly baseUrl: string | null = null,
+    protected readonly apiKey: string | null = null,
     protected readonly clientType: string = 'openai',
   ) {
     if (this.clientType === 'anthropic') {
@@ -94,8 +94,8 @@ export class BaseAgent {
       });
     } else {
       this.client = new OpenAI({
-        baseURL: base_url || this.configService.get('LLM_BASE_URL'),
-        apiKey: api_key || this.configService.get('LLM_API_KEY'),
+        baseURL: baseUrl || this.configService.get('LLM_BASE_URL'),
+        apiKey: apiKey || this.configService.get('LLM_API_KEY'),
       });
     }
 
@@ -191,7 +191,8 @@ export class BaseAgent {
         .replace('```', '')
         .replace('json', '')
         .replace('```', '')
-        .replace('typescescript', '');
+        .replace('typescescript', '')
+        .replace('tsx', '');
 
       const repaired = jsonrepair(cleanJSON);
 
@@ -321,6 +322,7 @@ export class BaseAgent {
             try {
               console.log('calling tool: ', toolCall.function);
               const result = await this.executeToolCall(toolCall);
+
               const toolResponse: Message = {
                 role: 'tool',
                 tool_call_id: toolCall.id,
@@ -329,61 +331,58 @@ export class BaseAgent {
                 agent_name: this.name,
               };
 
-              // Add tool response to thread
               this.thread.push(toolResponse);
               this.overallThread.push(toolResponse);
 
               // If this is an image search result, feed it back to LLM for analysis and code generation
-              if (toolCall.function.name === 'search_image') {
-                const imageResult = JSON.parse(toolResponse.content);
+              // if (toolCall.function.name === 'search_image') {
+              //   const imageResult = JSON.parse(toolResponse.content);
 
-                const messages: ChatMessage[] = [
-                  ...this.thread.map(this.convertToOpenAIMessage),
-                  {
-                    role: 'user',
-                    content: [
-                      {
-                        type: 'text',
-                        text: `Use this UI reference:`,
-                      },
-                      {
-                        type: 'image_url',
-                        image_url: {
-                          url: imageResult.imageUrl,
-                        },
-                      },
-                    ],
-                  },
-                ];
+              //   const messages: ChatMessage[] = [
+              //     ...this.thread.map(this.convertToOpenAIMessage),
+              //     {
+              //       role: 'user',
+              //       content: [
+              //         {
+              //           type: 'text',
+              //           text: `Use this UI reference:`,
+              //         },
+              //         {
+              //           type: 'image_url',
+              //           image_url: {
+              //             url: imageResult.imageUrl,
+              //           },
+              //         },
+              //       ],
+              //     },
+              //   ];
 
-                const response = await openaiClient.chat.completions.create({
-                  model: this.model,
-                  messages,
-                  tools: toolSchemas,
-                  temperature: this.temperature,
-                });
+              //   const response = await openaiClient.chat.completions.create({
+              //     model: this.model,
+              //     messages,
+              //     tools: toolSchemas,
+              //     temperature: this.temperature,
+              //   });
 
-                const message = response.choices[0].message;
-                const assistantMessage: Message = {
-                  role: 'assistant',
-                  content: message.content,
-                  type: MessageType.TEXT,
-                  agent_name: this.name,
-                };
-                this.thread.push(assistantMessage);
-                this.overallThread.push(assistantMessage);
-              }
+              //   const message = response.choices[0].message;
+              //   const assistantMessage: Message = {
+              //     role: 'assistant',
+              //     content: message.content,
+              //     type: MessageType.TEXT,
+              //     agent_name: this.name,
+              //   };
+              //   this.thread.push(assistantMessage);
+              //   this.overallThread.push(assistantMessage);
+              // }
             } catch (error) {
               console.error(`Tool execution error: ${error}`);
-              const toolResponse: Message = {
-                role: 'tool',
-                tool_call_id: toolCall.id,
+              const assistantMessage: Message = {
+                role: 'assistant',
                 content: JSON.stringify({ error: error.message }),
                 type: MessageType.ERROR,
                 agent_name: this.name,
               };
-              this.thread.push(toolResponse);
-              this.overallThread.push(toolResponse);
+              this.thread.push(assistantMessage);
             }
           } else {
             console.warn(`Warning: Tool ${toolCall.function.name} not found!`);

@@ -14,7 +14,6 @@ export class SimpleAgent {
   constructor(
     private readonly configService: ConfigService,
     private readonly systemPrompt: string,
-    private readonly outputFormat?: string,
     private readonly baseUrl?: string,
     private readonly apiKey?: string,
     private readonly modelName?: string,
@@ -29,7 +28,7 @@ export class SimpleAgent {
       modelName || this.configService.get('LLM_MODEL', 'gpt-4-turbo-preview');
   }
 
-  async execute(userInput: string): Promise<any> {
+  async execute(userInput: string, outputFormat?: string): Promise<any> {
     const completionArgs: ChatCompletionCreateParamsBase = {
       model: this.model,
       messages: [
@@ -44,7 +43,7 @@ export class SimpleAgent {
       ],
       temperature: this.temperature,
       response_format:
-        this.outputFormat === 'json' ? { type: 'json_object' } : undefined,
+        outputFormat === 'json' ? { type: 'json_object' } : undefined,
     };
 
     const response = (await this.client.chat.completions.create(
@@ -52,8 +51,7 @@ export class SimpleAgent {
     )) as ChatCompletion;
     const content = response.choices[0].message.content;
 
-    if (this.outputFormat && this.outputFormat === 'json' && content) {
-      // Clean up any markdown formatting that might be present
+    if (outputFormat && outputFormat === 'json' && content) {
       const cleanResponse = content.replace(/```json\n?|\n?```/g, '');
       return JSON.parse(cleanResponse);
     }
@@ -78,7 +76,6 @@ export class SimpleAgent {
     return new SimpleAgent(
       configService,
       systemPrompt,
-      options.outputFormat,
       options.baseUrl,
       options.apiKey,
       options.model,

@@ -58,7 +58,9 @@ export class EditorAgent {
         userId,
         1,
         tools,
-        'openai',
+        'gemini',
+        this.configService.get('GEMINI_BASE_URL'),
+        this.configService.get('GEMINI_API_KEY'),
       );
 
       this.activeSessions.set(userId, agent);

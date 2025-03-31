@@ -4,6 +4,7 @@ import { RedisCacheService } from 'src/redis/redis.service';
 import { BaseAgent } from './base.agent';
 import * as fs from 'fs';
 import * as path from 'path';
+import { SimpleAgent } from './simple.agent';
 
 interface RoutingResponse {
   category: 'manager_agent' | 'editor_agent' | 'coder_agent';
@@ -20,65 +21,38 @@ export class RouterAgent {
     this.activeSessions = new Map();
   }
 
-  private async getOrCreateAgent(userId: string): Promise<BaseAgent> {
-    if (!this.activeSessions.has(userId)) {
-      const agent = new BaseAgent(
-        this.configService,
-        this.redisCacheService,
-        'router_agent',
-        'gemini-2.0-flash',
-        fs.readFileSync(
-          path.join(process.cwd(), 'src', 'prompts', 'router-agent.prompt.md'),
-          'utf-8',
-        ),
-        userId,
-        0,
-        [],
-      );
-
-      this.activeSessions.set(userId, agent);
-    }
-
-    return this.activeSessions.get(userId)!;
+  private async getOrCreateAgent(): Promise<SimpleAgent> {
+    const agent = new SimpleAgent(
+      this.configService,
+      fs.readFileSync(
+        path.join(process.cwd(), 'src', 'prompts', 'router-agent.prompt.md'),
+        'utf-8',
+      ),
+      this.configService.get('GEMINI_BASE_URL'),
+      this.configService.get('GEMINI_API_KEY'),
+      'gemini-2.0-flash',
+      0,
+    );
+    return agent;
   }
 
   async routeQuery(
     userInput: string,
-    userId: string,
+    outputFormat?: string,
   ): Promise<RoutingResponse> {
     try {
-      const agent = await this.getOrCreateAgent(userId);
-      const response = await agent.run(userInput, 'json');
+      const agent = await this.getOrCreateAgent();
+      const response = await agent.execute(userInput, outputFormat);
 
-      // Get the last assistant message which should contain the routing JSON
-      const lastAssistantMessage = response
-        .filter((msg) => msg.role === 'assistant')
-        .pop();
-
-      if (!lastAssistantMessage?.content) {
-        throw new Error('No routing response received');
-      }
-
-      // Check if content is a string before parsing
-      if (typeof lastAssistantMessage.content !== 'string') {
-        throw new Error('Invalid response format: expected string content');
-      }
-
-      // Parse the JSON response
-      const routingResponse = JSON.parse(
-        lastAssistantMessage.content,
-      ) as RoutingResponse;
-
-      // Validate the response
       if (
         !['manager_agent', 'editor_agent', 'coder_agent'].includes(
-          routingResponse.category,
+          response.category,
         )
       ) {
-        throw new Error('Invalid routing category received');
+        return { category: 'manager_agent' };
       }
 
-      return routingResponse;
+      return response;
     } catch (error) {
       console.error('Error routing query:', error);
       // Default to manager agent if routing fails
