@@ -20,6 +20,7 @@ Your main task is to understand  the code file and its description to build or w
 
 # Quality Requirements:
 - Professional color schemes (use HSL values)
+- Make sure the UI is colourful and professional.
 - Responsive mobile-first layouts
 - Smooth Framer Motion transitions if animation is needed
 
@@ -31,7 +32,7 @@ Your main task is to understand  the code file and its description to build or w
 - Validate Tailwind class names
 - Ensure Radix UI proper usage
 - Don't add more than 5 items of mock data.
-- Use named export UI components like `export const CustomComponent = () => <div>Custom Component</div>` and import it like `import { CustomComponent } from '@/components/CustomComponent'`
+- Create named export UI components like `export const CustomComponent = () => <div>Custom Component</div>` and import it like `import { CustomComponent } from '@/components/CustomComponent'`
 
 # Project Directory Structure:
 1. project directory structure
@@ -81,9 +82,7 @@ src
         }}
       }}
     }}
-
-[]
-
+    
 [base_template]
 {{base_template}}
 

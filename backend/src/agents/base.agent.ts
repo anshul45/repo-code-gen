@@ -187,8 +187,13 @@ export class BaseAgent {
   robustJSONParse(input: string): any {
     try {
       const clean = input.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
+      const cleanJSON = clean
+        .replace('```', '')
+        .replace('json', '')
+        .replace('```', '')
+        .replace('typescescript', '');
 
-      const repaired = jsonrepair(clean);
+      const repaired = jsonrepair(cleanJSON);
 
       return parse(repaired);
     } catch (e) {

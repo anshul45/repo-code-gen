@@ -17,7 +17,7 @@ export const files = {
       },
       "next.config.js": {
         "file": {
-          "contents": "/** @type {import('next').NextConfig} */\nconst nextConfig = {\n  output: 'export',\n  eslint: {\n    ignoreDuringBuilds: true,\n  },\n  images: { domains: ['fastly.picsum.photos', 'picsum.photos']},\n};\n\nmodule.exports = nextConfig;\n"
+          "contents": "/** @type {import('next').NextConfig} */\nconst nextConfig = {\n  eslint: {\n    ignoreDuringBuilds: true,\n  },\n  images: {\n domains: [\"fastly.picsum.photos\", \"picsum.photos\"], \n unoptimized: true },\n};\n\nmodule.exports = nextConfig;\n"
         }
       },
      "package.json": {

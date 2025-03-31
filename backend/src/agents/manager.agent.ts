@@ -32,6 +32,11 @@ export class ManagerAgent {
         fs.readFileSync(baseTemplatePath, 'utf-8'),
       );
 
+      const uiComponentsList = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'prompts', 'ui_components_list.md'),
+        'utf-8',
+      );
+
       const tools: Tool[] = [
         {
           name: 'get_files_with_description',
@@ -63,7 +68,8 @@ export class ManagerAgent {
             ),
             'utf-8',
           )
-          .replace('{base_template}', JSON.stringify(baseTemplate)),
+          .replace('{base_template}', JSON.stringify(baseTemplate))
+          .replace('{ui_components_list}', uiComponentsList),
         userId,
         0.6,
         tools,

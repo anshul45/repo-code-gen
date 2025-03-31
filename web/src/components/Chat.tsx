@@ -130,7 +130,6 @@ export function Chat() {
 
       {/* Right: Tabs + Editor/Preview */}
       <div className="flex-[6.5] min-w-0 rounded-lg shadow-lg flex flex-col bg-white dark:bg-gray-800">
-        {/* Tabs */}
         <div className="flex bg-gray-100 w-fit dark:bg-gray-700 px-1 py-1 rounded-2xl my-2 ml-2 space-x-1">
           <button
             className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${activeTab === "code" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"

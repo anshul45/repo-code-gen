@@ -6,9 +6,8 @@ interface ChatState {
 }
 
 type SetState = StoreApi<ChatState>["setState"];
-type GetState = StoreApi<ChatState>["getState"];
 
-export const useChatStore = create<ChatState>((set: SetState, get: GetState) => ({
+export const useChatStore = create<ChatState>((set: SetState) => ({
   isChatsOpen: false,
 
   toggleChats: () => {

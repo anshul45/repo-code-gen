@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,9 +5,9 @@ import InputBox from './chat/input-box';
 import UserMessage from './chat/UserMessage';
 import AiMessage from './chat/AiMessage';
 import ToolMessage from './chat/ToolMessage';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { ChatMessage, SetSelectedMessageType } from '@/types/chat';
+import { ChatMessage } from '@/types/chat';
 
 interface ChatPreviewProps {
   setActiveFile: (file: { content: string; path: string; isNew: boolean }) => void;
@@ -166,7 +165,6 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
         </div>
       </ScrollArea>
 
-      {/* Input Box */}
       <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-3 bg-white dark:bg-gray-800">
         <div className="max-w-4xl mx-auto">
           <InputBox

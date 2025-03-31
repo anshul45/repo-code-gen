@@ -47,7 +47,7 @@ const CodeEditor = () => {
       }
       
       // Small delay between chunks for visible effect
-      await new Promise(resolve => setTimeout(resolve, 5)); // Slightly longer delay for smoother animation
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
 
     if (streamingFile === path) {
@@ -114,12 +114,11 @@ const CodeEditor = () => {
 
   return (
     <div className="border-t-[1px]">
-      {/* File path header */}
       <div className="border-b-[1px] mb-2 pl-2 py-1 text-sm bg-gray-50 dark:bg-gray-800">
         📄 {activeFile.path}
       </div>
 
-      {/* Monaco Editor */}
+      {/* Code Editor */}
       <Editor
         height="calc(100vh - 230px)"
         width="100%"
