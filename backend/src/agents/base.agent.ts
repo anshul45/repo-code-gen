@@ -317,76 +317,36 @@ export class BaseAgent {
           break;
         }
 
+        const toolResponses: Message[] = [];
+
         for (const toolCall of message.tool_calls) {
           if (toolCall.function.name in this.toolsMap) {
             try {
               console.log('calling tool: ', toolCall.function);
               const result = await this.executeToolCall(toolCall);
 
-              const toolResponse: Message = {
+              toolResponses.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
                 content: result ? JSON.stringify(result) : '{}',
                 type: this.getToolResponseType(toolCall.function.name),
                 agent_name: this.name,
-              };
-
-              this.thread.push(toolResponse);
-              this.overallThread.push(toolResponse);
-
-              // If this is an image search result, feed it back to LLM for analysis and code generation
-              // if (toolCall.function.name === 'search_image') {
-              //   const imageResult = JSON.parse(toolResponse.content);
-
-              //   const messages: ChatMessage[] = [
-              //     ...this.thread.map(this.convertToOpenAIMessage),
-              //     {
-              //       role: 'user',
-              //       content: [
-              //         {
-              //           type: 'text',
-              //           text: `Use this UI reference:`,
-              //         },
-              //         {
-              //           type: 'image_url',
-              //           image_url: {
-              //             url: imageResult.imageUrl,
-              //           },
-              //         },
-              //       ],
-              //     },
-              //   ];
-
-              //   const response = await openaiClient.chat.completions.create({
-              //     model: this.model,
-              //     messages,
-              //     tools: toolSchemas,
-              //     temperature: this.temperature,
-              //   });
-
-              //   const message = response.choices[0].message;
-              //   const assistantMessage: Message = {
-              //     role: 'assistant',
-              //     content: message.content,
-              //     type: MessageType.TEXT,
-              //     agent_name: this.name,
-              //   };
-              //   this.thread.push(assistantMessage);
-              //   this.overallThread.push(assistantMessage);
-              // }
+              });
             } catch (error) {
               console.error(`Tool execution error: ${error}`);
-              const assistantMessage: Message = {
-                role: 'assistant',
+              toolResponses.push({
+                role: 'tool',
+                tool_call_id: toolCall.id,
                 content: JSON.stringify({ error: error.message }),
                 type: MessageType.ERROR,
                 agent_name: this.name,
-              };
-              this.thread.push(assistantMessage);
+              });
             }
           } else {
             console.warn(`Warning: Tool ${toolCall.function.name} not found!`);
           }
+          this.thread.push(...toolResponses);
+          this.overallThread.push(...toolResponses);
         }
         toolCallCount++;
       }

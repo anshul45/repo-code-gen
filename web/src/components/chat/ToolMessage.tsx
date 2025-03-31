@@ -276,28 +276,28 @@ Please ensure the response is valid JSON.`,
           // Ensure proper import paths
           if (typeof fileContent === 'string') {
             // Fix component imports
-            fileContent = fileContent.replace(/from ['"]components\//g, "from '@/components/");
-            fileContent = fileContent.replace(/from ['"]lib\//g, "from '@/lib/");
-            fileContent = fileContent.replace(/from ['"]hooks\//g, "from '@/hooks/");
+            fileContent = fileContent.replace(/from ['"]components\//g, 'from "@/components/');
+            fileContent = fileContent.replace(/from ['"]lib\//g, 'from "@/lib/');
+            fileContent = fileContent.replace(/from ['"]hooks\//g, 'from "@/hooks/');
             
             // Fix data file imports with various patterns
-            fileContent = fileContent.replace(/from ['"]data\//g, "from '@/app/data/");
-            fileContent = fileContent.replace(/from ['"](\.\.\/)+data\//g, "from '@/app/data/");
-            fileContent = fileContent.replace(/from ['"]\.\/data\//g, "from '@/app/data/");
-            fileContent = fileContent.replace(/from ['"]tasks\.['"]/g, "from '@/app/data/tasks'");
+            fileContent = fileContent.replace(/from ['"]data\//g, 'from "@/app/data/');
+            fileContent = fileContent.replace(/from ['"](\.\.\/)+data\//g, 'from "@/app/data/');
+            fileContent = fileContent.replace(/from ['"]\.\/data\//g, 'from "@/app/data/');
+            fileContent = fileContent.replace(/from ['"]tasks\.['"]/g, 'from "@/app/data/tasks"');
             
             // Fix direct imports of data files
-            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]data\//g, "import $1 from '@/app/data/");
-            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"](\.\.\/)+data\//g, "import $1 from '@/app/data/");
-            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]\.\/data\//g, "import $1 from '@/app/data/");
-            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]tasks\.['"]/g, "import $1 from '@/app/data/tasks'");
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]data\//g, 'import $1 from "@/app/data/');
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"](\.\.\/)+data\//g, 'import $1 from "@/app/data/');
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]\.\/data\//g, 'import $1 from "@/app/data/');
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]tasks\.['"]/g, 'import $1 from "@/app/data/tasks"');
             
             // Clean up any malformed paths
-            fileContent = fileContent.replace(/['"]\.?\.?\/tasks\.['"]/g, "'@/app/data/tasks'");
-            fileContent = fileContent.replace(/['"]\.*\/data\/tasks\.['"]/g, "'@/app/data/tasks'");
+            fileContent = fileContent.replace(/['"]\.?\.?\/tasks\.['"]/g, '"@/app/data/tasks"');
+            fileContent = fileContent.replace(/['"]\.*\/data\/tasks\.['"]/g, '"@/app/data/tasks"');
             
             // Remove .json extension from imports if present
-            fileContent = fileContent.replace(/from ['"]@\/app\/data\/([^'"]+)\.json['"]/g, "from '@/app/data/$1'");
+            fileContent = fileContent.replace(/from ['"]@\/app\/data\/([^'"]+)\.json['"]/g, 'from "@/app/data/$1"');
           } else {
             appendTerminal("❌ Generated code content is not a string\n");
           }
