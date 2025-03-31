@@ -14,7 +14,6 @@ export class GetFilesWithDescriptionTool {
   constructor(private readonly configService: ConfigService) {}
 
   async execute(problemStatement: string): Promise<FileDescription[]> {
-    // Read base template
     const baseTemplatePath = path.join(
       process.cwd(),
       'src',
@@ -22,6 +21,11 @@ export class GetFilesWithDescriptionTool {
       'base-template.json',
     );
     const baseTemplate = JSON.parse(fs.readFileSync(baseTemplatePath, 'utf-8'));
+
+    const uiComponentsList = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'prompts', 'ui_components_list.md'),
+      'utf-8',
+    );
 
     const agent = SimpleAgent.create(
       this.configService,
@@ -42,29 +46,47 @@ You will be provided with the plan for a micro application which needs to implem
 
 # FileName Conventions:
 1. Customer components should be in src/components/ folder and has PascalCase naming convention for example MusicPlayer.tsx
-    
-OUTPUT JSON FORMAT:
-    {
-        "files": [
-            {
-                "file_path": 'src/components/Sidebar.tsx',
-                "description": <description>,
-            },
-            {
-                "file_path": 'src/components/MusicPlayer.tsx',
-                "description": <description>,
-            },
-            ...
-        ]
-    }
+
+# Rules for Ordering the files:
+- Layout files (layout.tsx) should always be order 1
+- Components used by pages should come before the pages files
+- Page files (page.tsx) should come after their layout files
+- Utility files (lib/, hooks/) should be after pages files
+- API routes should come after their corresponding pages
+
+
+# OUTPUT JSON FORMAT:
+{
+    "files": [
+        {
+            "file_path": "src/app/layout.tsx",
+            "description": "Root layout component...",
+            "order": 1
+        },
+        {
+            "file_path": "src/components/Sidebar.tsx",
+            "description": "Sidebar component...",
+            "order": 2
+        },
+        {
+            "file_path": "src/app/page.tsx",
+            "description": "Main page component...",
+            "order": 3
+        }
+    ]
+}
 
 [base_template]
-${JSON.stringify(baseTemplate)}`,
+${JSON.stringify(baseTemplate)}
+
+[ui_components]
+${JSON.stringify(uiComponentsList)}
+`,
       {
         outputFormat: 'json',
-        baseUrl: this.configService.get('LLM_BASE_URL'),
-        apiKey: this.configService.get('LLM_API_KEY'),
-        model: this.configService.get('LLM_MODEL', 'gemini-2.0-flash'),
+        baseUrl: this.configService.get('GEMINI_BASE_URL'),
+        apiKey: this.configService.get('GEMINI_API_KEY'),
+        model: this.configService.get('GEMINI_FLASH_MODEL'),
       },
     );
 
@@ -72,6 +94,7 @@ ${JSON.stringify(baseTemplate)}`,
       const response = await agent.execute(
         `Create a list of files and their descriptions for micro application building plan: '${problemStatement}'.
 Format the response as a JSON object with the following keys:`,
+        'json',
       );
       return response.files;
     } catch (error) {

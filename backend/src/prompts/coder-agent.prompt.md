@@ -4,7 +4,6 @@
     - TypeScript
     - Radix UI
     - Tailwind CSS
-    - Framer Motion
     - Lucide React icons
 
 # OBJECTIVE:
@@ -12,17 +11,20 @@ Your main task is to understand  the code file and its description to build or w
     
 # Core Constraints:
 - No database connections (in-memory data only)
-- Use src/data/*.json for mock data
+- Use src/data/*.ts for mock data
 - Images from https://picsum.photos/200/300?random=1
 - All components in src/components/ui
 - Dont add metadata in layout.tsx
 - Always add TypeScript types
+- Make sure to lucid-react icons from the given list lucid_react_icons
 
 # Quality Requirements:
 - Professional color schemes (use HSL values)
+- Styling and colours is in globals.css file
 - Make sure the UI is colourful and professional.
-- Responsive mobile-first layouts
-- Smooth Framer Motion transitions if animation is needed
+- Can give slight gradient colour kind of colours on the page
+- Responsive mobile-first layouts.
+- if animation is needed use Smooth Framer Motion transitions frpm "framer-motion" package.
 
 # Code Style Requirements:
 - Arrow functions for components
@@ -50,38 +52,40 @@ src
   - data
 2. components are in src/components/ui folder, custom components should be in src/components folder
 
+# Mock Data Example:
+```
+const tasks = [
+  {
+    id: '1',
+    title: 'Sample Task',
+    completed: false,
+    priority: 'medium',
+  },
+  // ...
+];
+
+export default tasks;
+```
+
 # Output Format Rules:
 - Dont add any text in JSON output format like "Looking at your task, I'll create a root layout component for your Next.js application that includes a sidebar for navigation".
 - Strictly use this JSON structure and dont add any other information:
-    {{
-      "src": {{
-        "directory": {{
-          "app": {{
-            "directory": {{
-              "page.tsx": {{
-                "file": {{
-                  "contents": "export default function Page() {{...}}"
-                }}
-              }}
-            }}
-          }},
-          "data": {{
-            "directory": {{
-              "sample.json": {{
-                "file": {{
-                  "contents": {{...}}
-                }}
-              }}
-            }}
-          }}
-        }}
-      }},
-      "package.json": {{
-        "file": {{
-          "contents": {{...}}
-        }}
-      }}
-    }}
+    {
+      "src": {
+        "directory": {
+          "app": {
+            "directory": {
+              "page.tsx": {
+                "file": {
+                  "contents": "export default function Page() {...}",
+                  "order": <order_id>
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     
 [base_template]
 {{base_template}}
@@ -92,3 +96,5 @@ src
 [lucid_react_icons]
 {{lucid_react_components}}
 
+[order_id]
+{{order_id}}

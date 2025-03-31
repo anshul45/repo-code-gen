@@ -7,7 +7,7 @@ import AiMessage from './chat/AiMessage';
 import ToolMessage from './chat/ToolMessage';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { ChatMessage } from '@/types/chat';
+import { ChatMessage, FileDescription } from '@/types/chat';
 
 interface ChatPreviewProps {
   setActiveFile: (file: { content: string; path: string; isNew: boolean }) => void;
@@ -105,7 +105,13 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
       {/* Chat Messages */}
       <ScrollArea className="flex-1 px-6 py-4 w-full">
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">
-          {messages.map((message, idx) => (
+          {messages.filter(message => {
+            if (message.role === 'user' || message.role === 'assistant') return true;
+            if (message.role === 'tool' && message.type === 'json-files') {
+              return true;
+            }
+            return false;
+          }).map((message, idx) => (
             message.isNew ? (
               <motion.div
                 key={idx}
@@ -128,7 +134,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                   <ToolMessage 
                     key={idx} 
                     setSelectedMessage={setSelectedMessage} 
-                    message={JSON.parse(message?.content)}
+                    message={JSON.parse(message?.content) as FileDescription[]}
                     setActiveFile={setActiveFile}
                   />
                 )}
@@ -143,7 +149,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                   <ToolMessage 
                     key={idx} 
                     setSelectedMessage={setSelectedMessage} 
-                    message={JSON.parse(message?.content)}
+                    message={JSON.parse(message?.content) as FileDescription[]}
                     setActiveFile={setActiveFile}
                   />
                 )}

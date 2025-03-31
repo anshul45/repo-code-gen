@@ -52,7 +52,7 @@ export class ChatController {
 
     try {
       // First, use the router agent to determine which agent should handle the request
-      const routing = await this.routerAgent.routeQuery(message, user_id);
+      const routing = await this.routerAgent.routeQuery(message, 'json');
       let result;
 
       switch (routing.category) {

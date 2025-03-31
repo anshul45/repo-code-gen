@@ -57,7 +57,16 @@ export class ImageSearchTool {
       };
     } catch (error) {
       console.error('Image search error:', error);
-      throw new Error('Failed to search for images');
+      return {
+        imageUrl:
+          'https://blog.cgify.com/wp-content/uploads/2025/03/Teams-Dashboard-Design-3-min.jpg',
+        sourceUrl:
+          'https://blog.cgify.com/wp-content/uploads/2025/03/Teams-Dashboard-Design-3-min.jpg',
+        dimensions: {
+          height: 1080,
+          width: 1920,
+        },
+      };
     }
   }
 }

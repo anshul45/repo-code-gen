@@ -106,8 +106,8 @@ const ToolMessage = ({ message, setSelectedMessage, setActiveFile }: ToolMessage
             message: `Generate ${file.file_path} , Description ${file.description}. 
 Important: Ensure the following for React/TypeScript components:
 1. Use proper import paths with @/ prefix (e.g., '@/components/ui/button')
-3. Use proper TypeScript types and interfaces
-4. Follow React best practices and patterns`,
+2. Use proper TypeScript types and interfaces
+3. Follow React best practices and patterns`,
             user_id: localStorage.getItem('chatUserId'),
             intent: 'code'
           }),
@@ -147,11 +147,42 @@ Important: Ensure the following for React/TypeScript components:
           return result;
         }
 
-        const latestCode = code[code.length - 1]?.content;
+        let latestCode = code[code.length - 1]?.content;
 
         if (!latestCode) {
           appendTerminal("❌ No code generated\n");
-          throw new Error('No code was generated');
+          appendTerminal("🔄 Retrying code generation...\n");
+          
+          // Retry the request
+          const retryResponse = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: `Generate ${file.file_path} , Description ${file.description}. 
+Important: Ensure the following for React/TypeScript components:
+1. Use proper import paths with @/ prefix (e.g., '@/components/ui/button')
+3. Use proper TypeScript types and interfaces
+4. Follow React best practices and patterns
+Please ensure code is generated properly.`,
+              user_id: localStorage.getItem('chatUserId'),
+              intent: 'code'
+            }),
+          });
+
+          if (!retryResponse.ok) {
+            throw new Error(`Failed to generate ${file.file_path} on retry`);
+          }
+
+          const retryData: ApiResponse = await retryResponse.json();
+          const retryCode = retryData?.result?.filter((item: CodeResult) => item.type === "code");
+          const retryLatestCode = retryCode[retryCode.length - 1]?.content;
+
+          if (!retryLatestCode) {
+            appendTerminal("❌ Failed to generate code even after retry\n");
+            throw new Error('No code generated even after retry');
+          }
+
+          latestCode = retryLatestCode;
         }
 
         let parsedCode;
@@ -215,6 +246,9 @@ Please ensure the response is valid JSON.`,
 
           const filePath = updatedData[0]?.path;
           let fileContent = updatedData[0]?.contents;
+
+          console.log("filePath", filePath);
+          console.log("fileContent", fileContent);
           
           if (!filePath || !fileContent) {
             appendTerminal("❌ Generated code is missing required file information\n");
@@ -240,9 +274,35 @@ Please ensure the response is valid JSON.`,
           }
 
           // Ensure proper import paths
-          fileContent = fileContent.replace(/from ['"]components\//g, "from '@/components/");
-          fileContent = fileContent.replace(/from ['"]lib\//g, "from '@/lib/");
-          fileContent = fileContent.replace(/from ['"]hooks\//g, "from '@/hooks/");
+          if (typeof fileContent === 'string') {
+            // Fix component imports
+            fileContent = fileContent.replace(/from ['"]components\//g, "from '@/components/");
+            fileContent = fileContent.replace(/from ['"]lib\//g, "from '@/lib/");
+            fileContent = fileContent.replace(/from ['"]hooks\//g, "from '@/hooks/");
+            
+            // Fix data file imports with various patterns
+            fileContent = fileContent.replace(/from ['"]data\//g, "from '@/app/data/");
+            fileContent = fileContent.replace(/from ['"](\.\.\/)+data\//g, "from '@/app/data/");
+            fileContent = fileContent.replace(/from ['"]\.\/data\//g, "from '@/app/data/");
+            
+            // Fix direct imports of data files (handling both relative and absolute paths)
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]data\//g, "import $1 from '@/app/data/");
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"](\.\.\/)+data\//g, "import $1 from '@/app/data/");
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]\.\/data\//g, "import $1 from '@/app/data/");
+            
+            // Handle direct file imports without path
+            fileContent = fileContent.replace(/from ['"]([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "from '@/app/data/$1'");
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "import $1 from '@/app/data/$2'");
+            
+            // Clean up any malformed paths
+            fileContent = fileContent.replace(/['"]\.?\.?\/([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "'@/app/data/$1'");
+            fileContent = fileContent.replace(/['"]\.*\/data\/([^'"]+)\.(json|ts|js|tsx?)['"]/g, "'@/app/data/$1'");
+            
+            // Remove any file extensions from imports
+            fileContent = fileContent.replace(/from ['"](@\/app\/data\/[^'"]+)\.(json|ts|js|tsx?)['"]/g, "from '$1'");
+          } else {
+            appendTerminal("❌ Generated code content is not a string\n");
+          }
 
           // Ensure 'use client' directive for client components
           if (filePath.endsWith('.tsx') && !fileContent.includes("use client")) {
