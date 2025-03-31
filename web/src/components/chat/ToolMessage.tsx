@@ -284,22 +284,20 @@ Please ensure the response is valid JSON.`,
             fileContent = fileContent.replace(/from ['"]data\//g, "from '@/app/data/");
             fileContent = fileContent.replace(/from ['"](\.\.\/)+data\//g, "from '@/app/data/");
             fileContent = fileContent.replace(/from ['"]\.\/data\//g, "from '@/app/data/");
+            fileContent = fileContent.replace(/from ['"]tasks\.['"]/g, "from '@/app/data/tasks'");
             
-            // Fix direct imports of data files (handling both relative and absolute paths)
+            // Fix direct imports of data files
             fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]data\//g, "import $1 from '@/app/data/");
             fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"](\.\.\/)+data\//g, "import $1 from '@/app/data/");
             fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]\.\/data\//g, "import $1 from '@/app/data/");
-            
-            // Handle direct file imports without path
-            fileContent = fileContent.replace(/from ['"]([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "from '@/app/data/$1'");
-            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "import $1 from '@/app/data/$2'");
+            fileContent = fileContent.replace(/import\s+(\w+)\s+from\s+['"]tasks\.['"]/g, "import $1 from '@/app/data/tasks'");
             
             // Clean up any malformed paths
-            fileContent = fileContent.replace(/['"]\.?\.?\/([^\/'"]+)\.(json|ts|js|tsx?)['"]/g, "'@/app/data/$1'");
-            fileContent = fileContent.replace(/['"]\.*\/data\/([^'"]+)\.(json|ts|js|tsx?)['"]/g, "'@/app/data/$1'");
+            fileContent = fileContent.replace(/['"]\.?\.?\/tasks\.['"]/g, "'@/app/data/tasks'");
+            fileContent = fileContent.replace(/['"]\.*\/data\/tasks\.['"]/g, "'@/app/data/tasks'");
             
-            // Remove any file extensions from imports
-            fileContent = fileContent.replace(/from ['"](@\/app\/data\/[^'"]+)\.(json|ts|js|tsx?)['"]/g, "from '$1'");
+            // Remove .json extension from imports if present
+            fileContent = fileContent.replace(/from ['"]@\/app\/data\/([^'"]+)\.json['"]/g, "from '@/app/data/$1'");
           } else {
             appendTerminal("❌ Generated code content is not a string\n");
           }

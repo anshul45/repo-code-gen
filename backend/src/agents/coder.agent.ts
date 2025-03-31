@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RedisCacheService } from 'src/redis/redis.service';
+import { RedisCacheService } from '../redis/redis.service';
 import { BaseAgent, Message } from './base.agent';
 import * as fs from 'fs';
 import * as path from 'path';

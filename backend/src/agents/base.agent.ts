@@ -9,8 +9,8 @@ import type {
   ChatCompletionAssistantMessageParam,
   ChatCompletionToolMessageParam,
 } from 'openai/resources/chat/completions';
-import { RedisCacheService } from 'src/redis/redis.service';
-import { MessageType } from 'src/types/message.types';
+import { RedisCacheService } from '../redis/redis.service';
+import { MessageType } from '../types/message.types';
 import { jsonrepair } from 'jsonrepair';
 import { parse } from 'json5';
 

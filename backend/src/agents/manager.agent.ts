@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RedisCacheService } from 'src/redis/redis.service';
+import { RedisCacheService } from '../redis/redis.service';
 import { BaseAgent, Message, Tool } from './base.agent';
 import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description.tool';
 import { ImageSearchTool } from '../tools/image-search/image-search.tool';

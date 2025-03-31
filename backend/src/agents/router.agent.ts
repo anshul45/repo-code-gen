@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RedisCacheService } from 'src/redis/redis.service';
 import { BaseAgent } from './base.agent';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,10 +13,7 @@ interface RoutingResponse {
 export class RouterAgent {
   private activeSessions: Map<string, BaseAgent>;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly redisCacheService: RedisCacheService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.activeSessions = new Map();
   }
 

@@ -8,9 +8,10 @@ import { RouterAgent } from '../agents/router.agent';
 import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description.tool';
 import { ConfigModule } from '@nestjs/config';
 import { ImageSearchModule } from '../tools/image-search/image-search.module';
+import { RedisCacheModule } from '../redis/redis.module';
 
 @Module({
-  imports: [ConfigModule, ImageSearchModule],
+  imports: [ConfigModule, ImageSearchModule, RedisCacheModule],
   controllers: [ChatController],
   providers: [
     ChatService,
