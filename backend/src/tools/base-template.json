@@ -32,6 +32,33 @@
             }
           }
         }
+      },
+      "lib": {
+        "directory": {
+          "utils.ts": {
+            "file": {
+              "contents": "// Utility functions"
+            }
+          }
+        } 
+      },
+      "hooks": {
+        "directory": {
+          "use-toast.ts": {
+            "file": {
+              "contents": "// Toast hook"
+            }
+          }
+        } 
+      },
+      "data": {
+        "directory": {
+          "tasks.ts": {
+            "file": {
+              "contents": "// Task data"
+            }
+          }
+        }
       }
     }
   }
