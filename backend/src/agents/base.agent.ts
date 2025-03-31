@@ -398,7 +398,7 @@ export class BaseAgent {
       throw error;
     }
   }
-
+  
   private getToolResponseType(toolName: string): MessageType {
     if (toolName === 'get_files_with_description') {
       return MessageType.JSON_FILES;
