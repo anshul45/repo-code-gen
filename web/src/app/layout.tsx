@@ -3,6 +3,7 @@ import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/sidebar/app-sidebar"
 import Header from "@/components/Header"
+import { Providers } from "@/components/providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,22 +18,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} font-sans antialiased bg-background text-foreground`}>
       <body className="min-h-screen flex">
-        <SidebarProvider>
-          {/* Sidebar */}
-          <AppSidebar className="hidden md:block w-64 border-r" />
-
+        <Providers>
           {/* Main content */}
           <div className="flex-1 flex flex-col">
             <div className="flex items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b">
-              <SidebarTrigger className="p-2 border-r" />
               <div className="flex-1">
                 <Header />
               </div>
             </div>
             {children}
           </div>
-        </SidebarProvider>
+        </Providers>
       </body>
-    </html>
+    </html >
   );
 }
