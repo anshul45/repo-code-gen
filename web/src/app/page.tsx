@@ -1,12 +1,12 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/auth';
 
-import { Chat } from "@/components/Chat";
+export default async function HomePage() {
+  const session = await getSession();
 
-export default function Home() {
- 
-  return (
-    <main className="w-full h-[calc(100vh-100px)]">
-      <Chat />
-    </main>
-  );
+  if (session) {
+    redirect('/create');
+  } else {
+    redirect('/auth/sign-in');
+  }
 }
