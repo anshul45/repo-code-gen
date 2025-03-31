@@ -27,68 +27,29 @@ export class GetFilesWithDescriptionTool {
       'utf-8',
     );
 
-    const agent = SimpleAgent.create(
-      this.configService,
-      `You are a highly skilled **100x Next.js TypeScript developer** specializing in **Radix UI**, **Tailwind CSS**, and **App Router (Next.js 14)**.  
-Your task is to plan which files need to be created for the project and provide the description of what needs to be done in those files like a best MVP product.
-These files are connected to each other, meaning this is functional connected application, where user can navigate between pages and components.
-You need to mention the files transition in the descriptcion of the file that is interacting with other files.
-The **base_template** is already set up with **Next.js 14 App Router**, **Radix UI** and **Tailwind CSS** and it is provided to you as a context in json format.
-
-Your task is to **expand the application** by adding **routes, components, layouts, styling and features** as required. 
-You will be provided with the plan for a micro application which needs to implemented, understand it and create which files need to be created and provide the description of what needs to be done in those files for implementation purposes.
-
-# IMPORTANT POINTS:
-    - the code should use src/app/page.tsx as the main page or any app should start from this page. for example, if you are cereating a todo app, then the code should start from src/app/page.tsx where the todo app should start.
-    - The UI page .tsx file should be inside folder in the app directory.
-    - the api file is .route.ts file and should be inside folder in the api directory.
-    - the components are basic building blocks so please keep the components at the top of the files.
-
-# FileName Conventions:
-1. Customer components should be in src/components/ folder and has PascalCase naming convention for example MusicPlayer.tsx
-
-# Rules for Ordering the files:
-- Layout files (layout.tsx) should always be order 1
-- Components used by pages should come before the pages files
-- Page files (page.tsx) should come after their layout files
-- Utility files (lib/, hooks/) should be after pages files
-- API routes should come after their corresponding pages
-
-
-# OUTPUT JSON FORMAT:
-{
-    "files": [
-        {
-            "file_path": "src/app/layout.tsx",
-            "description": "Root layout component...",
-            "order": 1
-        },
-        {
-            "file_path": "src/components/Sidebar.tsx",
-            "description": "Sidebar component...",
-            "order": 2
-        },
-        {
-            "file_path": "src/app/page.tsx",
-            "description": "Main page component...",
-            "order": 3
-        }
-    ]
-}
-
-[base_template]
-${JSON.stringify(baseTemplate)}
-
-[ui_components]
-${JSON.stringify(uiComponentsList)}
-`,
-      {
-        outputFormat: 'json',
-        baseUrl: this.configService.get('GEMINI_BASE_URL'),
-        apiKey: this.configService.get('GEMINI_API_KEY'),
-        model: this.configService.get('GEMINI_FLASH_MODEL'),
-      },
+    const lucidReactIcons = fs.readFileSync(
+      path.join(process.cwd(), 'src', 'prompts', 'lucid_react_components.txt'),
+      'utf-8',
     );
+
+    const promptPath = path.join(
+      process.cwd(),
+      'src',
+      'tools',
+      'get-files-with-description.tool.ts.md',
+    );
+    const prompt = fs
+      .readFileSync(promptPath, 'utf-8')
+      .replace('{baseTemplate}', JSON.stringify(baseTemplate))
+      .replace('{uiComponentsList}', uiComponentsList)
+      .replace('{lucidReactIcons}', lucidReactIcons);
+
+    const agent = SimpleAgent.create(this.configService, prompt, {
+      outputFormat: 'json',
+      baseUrl: this.configService.get('GEMINI_BASE_URL'),
+      apiKey: this.configService.get('GEMINI_API_KEY'),
+      model: this.configService.get('GEMINI_FLASH_MODEL'),
+    });
 
     try {
       const response = await agent.execute(
