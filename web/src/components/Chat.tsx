@@ -183,7 +183,7 @@ export function Chat() {
               </PanelGroup>
             </div>
           ) : (
-            <div className="w-full h-full border-t-[1px] border-gray-200 dark:border-gray-700">
+            <div className="w-full xl:w-[1000px] h-full border-t-[1px] border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2 p-2 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md">
                   <input
