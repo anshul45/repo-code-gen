@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { ConfigService } from '@nestjs/config';
+import { writeFile, appendFile, access } from 'fs/promises';
 import type {
   ChatCompletionContentPart,
   ChatCompletionSystemMessageParam,
@@ -67,6 +68,15 @@ interface FunctionSchema {
     };
   };
 }
+
+interface FileContent {
+  contents: string;
+}
+
+type FileStructure = {
+  file?: FileContent;
+  directory?: Record<string, FileStructure>;
+} & Record<string, any>;
 
 @Injectable()
 export class BaseAgent {
@@ -188,11 +198,11 @@ export class BaseAgent {
     try {
       const clean = input.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
       const cleanJSON = clean
+        .replace('```tsx', '')
         .replace('```', '')
         .replace('json', '')
         .replace('```', '')
-        .replace('typescescript', '')
-        .replace('tsx', '');
+        .replace('typescript', '');
 
       const repaired = jsonrepair(cleanJSON);
 
@@ -239,6 +249,9 @@ export class BaseAgent {
 
           const message = (response.content[0] as any).text;
           const cleanResponse = this.robustJSONParse(message);
+
+          this.storeGeneratedCode(cleanResponse);
+
           const assistantMessage: Message = {
             role: 'assistant',
             content: JSON.stringify({
@@ -359,7 +372,7 @@ export class BaseAgent {
     }
   }
 
-  private getToolResponseType(toolName: string): MessageType {
+  protected getToolResponseType(toolName: string): MessageType {
     if (toolName === 'get_files_with_description') {
       return MessageType.JSON_FILES;
     }
@@ -375,7 +388,89 @@ export class BaseAgent {
     return MessageType.TEXT;
   }
 
-  private async saveThread(): Promise<void> {
+  protected async storeGeneratedCode(
+    response: Record<string, FileStructure>,
+  ): Promise<void> {
+    try {
+      const extractedFiles: { path: string; content: string }[] = [];
+
+      const extractFiles = (
+        obj: Record<string, FileStructure>,
+        currentPath: string = '',
+      ): void => {
+        for (const [key, value] of Object.entries(obj)) {
+          if (value && typeof value === 'object') {
+            if ('file' in value && value.file) {
+              // Ensure key includes file extension
+              const fullPath = key.includes('.') ? key : `${key}.ts`;
+              extractedFiles.push({
+                path: `${currentPath}${fullPath}`,
+                content: value.file.contents,
+              });
+            } else if ('directory' in value) {
+              extractFiles(value.directory, `${currentPath}${key}/`);
+            } else {
+              extractFiles(
+                value as Record<string, FileStructure>,
+                `${currentPath}${key}/`,
+              );
+            }
+          }
+        }
+      };
+
+      extractFiles(response);
+      // Create markdown content
+      const markdownContent = extractedFiles
+        .map((file) => `## ${file.path}\n${file.content}\n\`\`\``)
+        .join('\n\n');
+
+      const filePath = `project_${this.sessionId}.md`;
+      const timestamp = new Date().toISOString();
+      const newContent = `\n\n# Generated Code - ${timestamp}\n\n${markdownContent}`;
+
+      if (!(await this.fileExists(filePath))) {
+        await this.addFile(filePath, newContent.trim());
+      } else {
+        await this.appendToFile(filePath, newContent);
+      }
+    } catch (error) {
+      console.error('Error storing generated code:', error);
+      throw error;
+    }
+  }
+
+  protected async fileExists(path: string): Promise<boolean> {
+    try {
+      await access(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  protected async addFile(path: string, content: string): Promise<void> {
+    try {
+      await writeFile(path, content, 'utf8');
+      console.log(`Successfully created file: ${path}`);
+    } catch (error) {
+      console.error(`Error creating file ${path}:`, error);
+      throw error;
+    }
+  }
+
+  protected async appendToFile(path: string, content: string): Promise<void> {
+    try {
+      await appendFile(path, content, 'utf8');
+      console.log(`Successfully appended to file: ${path}`);
+      console.log(`Successfully wrote to file: ${path}`);
+    } catch (error) {
+      console.error(`Error writing to file ${path}:`, error);
+      throw error;
+    }
+  }
+
+  protected async saveThread(): Promise<void> {
     if (this.sessionId) {
       await this.redisCacheService.set(
         `${this.name}${this.sessionId}`,
