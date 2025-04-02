@@ -68,6 +68,15 @@ export default function DashboardPage() {
 }
 ```
 
+# Some Errors to Avoid:
+1. /src/app/globals.css The `text-warning` class does not exist. If `text-warning` is a custom class, make sure it is defined within a `@layer` directive.
+ .status-medium {
+    @apply text-warning border-warning/50 bg-warning/10;
+         ^
+}
+
+2. 
+
 # Project Directory Structure:
 1. project directory structure
 src
