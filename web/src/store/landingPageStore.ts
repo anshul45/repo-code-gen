@@ -15,27 +15,10 @@ interface FileNode {
   contents?: string;
 }
 
-interface FileChange {
-  filename: string;
-  content: string;
-  isNew?: boolean;
-  isSaved?: boolean;
-}
-
-const createFileChange = (
-  filename: string,
-  content: string,
-  options?: { isNew?: boolean; isSaved?: boolean }
-): FileChange => ({
-  filename,
-  content,
-  ...options
-});
-
-interface FileState {
+interface LandingPageState {
   files: DirectoryNode;
-  fileChanges: FileChange | null;
-  updateFile: (filename: string, content: string, isSaved?: boolean) => void;
+  fileChanges: { filename: string; content: string; isNew?: boolean } | null;
+  updateFile: (filename: string, content: string) => void;
   addFile: (filename: string, content: string) => void;
   isMount: boolean;
   mountFile: string | null;
@@ -47,8 +30,8 @@ interface FileState {
   unlockFile: (filename: string) => void;
 }
 
-export const useFileStore = create<FileState>((set) => ({
-  files: files,
+export const useLandingPageStore = create<LandingPageState>((set) => ({
+  files,
   fileChanges: null,
   isMount: false,
   mountFile: null,
@@ -72,34 +55,35 @@ export const useFileStore = create<FileState>((set) => ({
         const parsedFiles = JSON.parse(file);
         const filenames = Object.keys(parsedFiles);
         const newLockedFiles = new Set(state.lockedFiles);
-        filenames.forEach((filename) => newLockedFiles.add(filename));
-
+        filenames.forEach(filename => newLockedFiles.add(filename));
+        
         return {
           mountFile: file,
           isMount: true,
-          lockedFiles: newLockedFiles,
+          lockedFiles: newLockedFiles
         };
       } catch (error) {
-        console.error("Error parsing mount file:", error);
+        console.error('Error parsing mount file:', error);
         return {
           mountFile: file,
-          isMount: true,
+          isMount: true
         };
       }
     }),
-
-  updateFile: (filename: string, content: string, isSaved: boolean = false) =>
+ 
+  updateFile: (filename: string, content: string) =>
     set((state) => {
       if (state.lockedFiles.has(filename)) {
         console.warn(`Attempted to modify locked file: ${filename}`);
         return state;
       }
-
       const updatedFiles = JSON.parse(JSON.stringify(state.files));
+
       const updateFileContent = (node: DirectoryNode, pathParts: string[]) => {
         if (!pathParts.length) return;
 
         const currentPart = pathParts[0];
+
         if (pathParts.length === 1) {
           if (node[currentPart]?.file) {
             node[currentPart].file.contents = content;
@@ -115,6 +99,7 @@ export const useFileStore = create<FileState>((set) => ({
       };
 
       const pathParts = filename.split("/");
+
       if (pathParts.length === 1) {
         if (updatedFiles[pathParts[0]]?.file) {
           updatedFiles[pathParts[0]].file.contents = content;
@@ -125,13 +110,10 @@ export const useFileStore = create<FileState>((set) => ({
         updateFileContent(updatedFiles, pathParts);
       }
 
-      return {
-        files: { ...updatedFiles },
-        fileChanges: createFileChange(filename, content, { isSaved }),
-      };
+      return { files: { ...updatedFiles }, fileChanges: { filename, content } };
     }),
 
-  addFile: (filename: string, content: string) =>
+  addFile: (filename, content) =>
     set((state) => {
       if (state.lockedFiles.has(filename)) {
         console.warn(`Attempted to modify locked file: ${filename}`);
@@ -139,15 +121,17 @@ export const useFileStore = create<FileState>((set) => ({
       }
 
       const updatedFiles = JSON.parse(JSON.stringify(state.files));
+      let fileChanged = null;
       let isNewFile = false;
-
       const addOrUpdateFile = (node: DirectoryNode, pathParts: string[]) => {
         if (!pathParts.length) return;
-
+  
         const currentPart = pathParts[0];
+  
         if (pathParts.length === 1) {
           if (node[currentPart]?.file) {
             node[currentPart].file.contents = content;
+            fileChanged = { filename, content };
           } else {
             node[currentPart] = { file: { contents: content } };
             isNewFile = true;
@@ -162,23 +146,19 @@ export const useFileStore = create<FileState>((set) => ({
           }
         }
       };
-
+  
       const pathParts = filename.split("/");
+  
       if (pathParts.length === 1) {
         if (updatedFiles[pathParts[0]]?.file) {
           updatedFiles[pathParts[0]].file.contents = content;
         } else {
           updatedFiles[pathParts[0]] = { file: { contents: content } };
-          isNewFile = true;
         }
       } else {
         addOrUpdateFile(updatedFiles, pathParts);
       }
-
-      return {
-        files: { ...updatedFiles },
-        fileChanges: createFileChange(filename, content, { isNew: isNewFile, isSaved: false }),
-        isMount: isNewFile,
-      };
+  
+      return { files: { ...updatedFiles }, fileChanges: fileChanged, isMount: isNewFile };
     }),
 }));

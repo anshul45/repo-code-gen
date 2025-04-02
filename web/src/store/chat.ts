@@ -4,7 +4,8 @@ import { streamChat } from '@/lib/api';
 interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'tool';
+  type?: string;
   timestamp: Date;
 }
 
@@ -12,7 +13,7 @@ interface ChatState {
   messages: Message[];
   isStreaming: boolean;
   currentStreamedContent: string;
-  addMessage: (content: string, role: 'user' | 'assistant') => void;
+  addMessage: (content: string, role: 'user' | 'assistant' | 'tool', type?: string) => void;
   updateStreamedContent: (content: string) => void;
   setIsStreaming: (isStreaming: boolean) => void;
   sendMessage: (content: string, userId: string) => Promise<void>;
@@ -26,17 +27,23 @@ export const useChatStore = create<ChatState>((set: SetState, get: GetState) => 
   isStreaming: false,
   currentStreamedContent: '',
 
-  addMessage: (content: string, role: 'user' | 'assistant') => {
+  addMessage: (content: string, role: 'user' | 'assistant' | 'tool', type?: string) => {
     const message: Message = {
       id: crypto.randomUUID(),
       content,
       role,
+      type,
       timestamp: new Date(),
     };
-    set((state) => ({
-      messages: [...(state as ChatState).messages, message],
-      currentStreamedContent: '',
-    }));
+    console.log("Adding message to chat store:", message);
+    set((state) => {
+      const newState = {
+        messages: [...state.messages, message],
+        currentStreamedContent: '',
+      };
+      console.log("New chat store state:", newState);
+      return newState;
+    });
   },
 
   updateStreamedContent: (content: string) => {

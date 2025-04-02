@@ -3,23 +3,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { WebContainer } from "@webcontainer/api";
 import { bootWebContainer } from "@/lib/webContainer";
+import { Download } from 'lucide-react';
+import { createProjectZip } from '@/lib/zipUtils';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import ChatPreview from './ChatPreview';
 import { useFileStore } from '@/store/fileStore';
+import { useLandingPageStore } from '@/store/landingPageStore';
+import { useChatStore } from '@/store/chat';
 import Terminal from './Terminal';
 import { motion } from "framer-motion";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { PreviewPanel } from './PreviewPanel';
 
-export function Chat() {
+export function Chat({ mode = "default" }: { mode?: "default" | "landing-page" }) {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
-  const [activeTab, setActiveTab] = useState<"code" | "preview">("code");
+  const [activeTab, setActiveTab] = useState<"code" | "preview">(mode === "landing-page" ? "preview" : "code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
-  const { files, fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = useFileStore();
+  const fileStore = useFileStore();
+  const landingPageStore = useLandingPageStore();
+  const { files, fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = 
+    mode === "landing-page" ? landingPageStore : fileStore;
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [command, setCommand] = useState("");
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
-  const [url,setUrl] = useState<string|null>(null)
+  const [url,setUrl] = useState<string|null>(null);
+  const chatStore = useChatStore();
 
   const appendTerminal = (msg: string) => {
     if (msg.includes("\x1Bc") || msg.includes("\x1B[2J")) {
@@ -28,7 +37,6 @@ export function Chat() {
       setTerminalOutput((prev) => [...prev, msg]);
     }
   };
-
 
   const clearTerminal = () => {
     setTerminalOutput([]); 
@@ -48,7 +56,21 @@ export function Chat() {
   useEffect(() => {
     const initialize = async () => {
       if (!webcontainer) {
-        const instance = await bootWebContainer(files, setIsLoadingPreview, appendTerminal, setUrl, lockFile, unlockFile);
+        const instance = await bootWebContainer(
+          files, 
+          setIsLoadingPreview, 
+          appendTerminal, 
+          setUrl, 
+          lockFile, 
+          unlockFile,
+          (error, role = 'assistant', type = 'error') => {
+            console.log("Adding error to chat:", error, role, type);
+            // Add error message to chat store
+            chatStore.addMessage(error, role, type);
+            // Also log current messages for debugging
+            console.log("Current chat messages:", chatStore.messages);
+          }
+        );
         setWebcontainer(instance);
 
         if (instance) {
@@ -76,10 +98,10 @@ export function Chat() {
     };
 
     initialize();
-  }, [webcontainer]);
+  }, [webcontainer, mode, files, lockFile, unlockFile]);
 
   useEffect(() => {
-    if (fileChanges && fileChanges.filename && fileChanges.content) {
+    if (fileChanges && 'isSaved' in fileChanges && fileChanges.isSaved) {
       writeFileToWebContainer(fileChanges.filename, fileChanges.content);
     }
   }, [fileChanges]);
@@ -120,109 +142,151 @@ export function Chat() {
     }
   }, [isMount, mountFile, lockFile, unlockFile, webcontainer]);
 
-
   return (
-    <div className="w-full flex h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900">
-      {/* Left: Chat Preview */}
-      <div className='flex-[3.5] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden'>
-      <ChatPreview setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
+    <div className="w-full grid grid-cols-12 h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900 min-w-[1000px] overflow-hidden min-h-0">
+      {/* Chat Preview */}
+      <div className={`col-span-4 h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden min-w-0 min-h-0`}>
+        <ChatPreview setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
       </div>
 
-      {/* Right: Tabs + Editor/Preview */}
-      <div className="flex-[6.5] min-w-0 rounded-lg shadow-lg flex flex-col bg-white dark:bg-gray-800">
-        <div className="flex bg-gray-100 w-fit dark:bg-gray-700 px-1 py-1 rounded-2xl my-2 ml-2 space-x-1">
-          <button
-            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${activeTab === "code" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            onClick={() => setActiveTab("code")}
-          >
-            Code
-          </button>
-          <button
-            className={`rounded-3xl px-3 py-0.5 text-sm transition-colors duration-200 ${activeTab === "preview" ? "bg-white dark:bg-gray-600 shadow-sm" : "hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            onClick={() => setActiveTab("preview")}
-          >
-            Preview
-          </button>
-        </div>
-
-        {/* Code or Preview Section */}
-        <div className="w-full flex-1 overflow-hidden flex flex-col">
-          {activeTab === "code" ? (
-            <div className="w-full flex flex-col md:flex-row h-full">
-              {/* File Explorer */}
-              <PanelGroup direction="vertical">
-                <Panel defaultSize={80}>
-                <PanelGroup direction="horizontal">
-                  <Panel defaultSize={20} minSize={20} maxSize={25}>
-                    <FileExplorer setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
-                  </Panel>
-                  <PanelResizeHandle className="w-[1px] bg-gray-200 dark:bg-gray-700" />
-                  <Panel defaultSize={80}>
-                    <CodeEditor />
-                  </Panel>
-                  </PanelGroup>
-                </Panel>
-                <Panel defaultSize={20}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className='rounded-b-2xl'
+      {/* Right Section */}
+      <div className={`col-span-8 h-full rounded-lg shadow-lg flex flex-col bg-white dark:bg-gray-800 min-h-0`}>
+        {mode === "default" ? (
+          <>
+            {/* IDE Toolbar */}
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 min-w-0">
+              {/* Left side: Tabs */}
+              <div className="flex items-center space-x-2 min-w-0">
+                <div className="flex bg-gray-50 dark:bg-gray-900 rounded-lg p-1">
+                  <button
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                      activeTab === "code"
+                        ? "bg-white dark:bg-gray-800 text-primary shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    }`}
+                    onClick={() => setActiveTab("code")}
                   >
-                    <Terminal
-                      output={terminalOutput}
-                      command={command}
-                      onCommandChange={setCommand}
-                      onCommandSubmit={handleCommandSubmit}
-                      onClear={clearTerminal}
-                    />
-                  </motion.div> 
-                </Panel>
-              </PanelGroup>
-            </div>
-          ) : (
-            <div className="w-full xl:w-[1000px] h-full border-t-[1px] border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 p-2 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md">
-                  <input
-                    type="text"
-                    value={url || ''}
-                    onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && webcontainer) {
-                        const newUrl = e.currentTarget.value;
-                        if (newUrl.startsWith('http://localhost:')) {
-                          setUrl(newUrl);
-                        }
-                      }
-                    }}
-                    placeholder="Enter URL (e.g. http://localhost:3000)"
-                    className="w-full bg-transparent outline-none text-sm"
-                  />
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Code
+                    </div>
+                  </button>
+                  <button
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                      activeTab === "preview"
+                        ? "bg-white dark:bg-gray-800 text-primary shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                    }`}
+                    onClick={() => setActiveTab("preview")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      Preview
+                    </div>
+                  </button>
                 </div>
+              </div>
+
+              {/* Right side: Actions */}
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setUrl(null)}
-                  className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+                  onClick={async () => {
+                    try {
+                      await createProjectZip(files);
+                    } catch (error) {
+                      console.error('Error creating zip file:', error);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
                 >
-                  Reset
+                  <Download className="h-4 w-4" />
+                  Download Project
                 </button>
               </div>
-              {isLoadingPreview && !url ? (
-                <div className="flex items-center justify-center text-gray-500 rounded-b-md w-full h-[calc(100vh-71px)]">
-                  Loading preview...
-                </div>
-              ) : (
-                <iframe
-                  src={url as string}
-                  title="WebContainer"
-                  className="rounded-b-md w-full h-[calc(100vh-143px)]"
-                />
-              )} 
             </div>
-          )}
-        </div>
+
+            {/* Code or Preview Section */}
+            <div className="flex-1 overflow-hidden h-full w-full">
+              {activeTab === "code" ? (
+                <PanelGroup direction="vertical" className="h-full min-w-0">
+                  <Panel defaultSize={80}>
+                    <PanelGroup direction="horizontal" className="min-w-0">
+                      {/* File Explorer with title */}
+                      <Panel defaultSize={20} minSize={20} maxSize={25}>
+                        <div className="h-full flex flex-col min-w-0">
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Explorer</h3>
+                          </div>
+                          <div className="flex-1 overflow-auto">
+                            <FileExplorer setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
+                          </div>
+                        </div>
+                      </Panel>
+                      
+                      <PanelResizeHandle className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" />
+                      
+                      {/* Code Editor with title */}
+                      <Panel defaultSize={80}>
+                        <div className="h-full flex flex-col min-w-0">
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 min-w-0">
+                            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Editor</h3>
+                          </div>
+                          <div className="flex-1">
+                            <CodeEditor />
+                          </div>
+                        </div>
+                      </Panel>
+                    </PanelGroup>
+                  </Panel>
+
+                  {/* Terminal with title */}
+                  <Panel defaultSize={20}>
+                    <div className="h-full flex flex-col border-t border-gray-200 dark:border-gray-700 min-w-0">
+                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 min-w-0">
+                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Terminal</h3>
+                      </div>
+                      <div className="flex-1">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="h-full"
+                        >
+                          <Terminal
+                            output={terminalOutput}
+                            command={command}
+                            onCommandChange={setCommand}
+                            onCommandSubmit={handleCommandSubmit}
+                            onClear={clearTerminal}
+                          />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </Panel>
+                </PanelGroup>
+              ) : (
+                <PreviewPanel
+                  url={url}
+                  isLoading={isLoadingPreview}
+                  onUrlChange={setUrl}
+                  onReset={() => setUrl(null)}
+                />
+              )}
+            </div>
+          </>
+        ) : (
+          <PreviewPanel
+            url={url}
+            isLoading={isLoadingPreview}
+            onUrlChange={setUrl}
+            onReset={() => setUrl(null)}
+          />
+        )}
       </div>
     </div>
   );

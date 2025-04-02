@@ -1,8 +1,9 @@
 "use client"
 
 import type * as React from "react"
-import { Code, FolderIcon, LayoutDashboardIcon, ListIcon, LogOut } from "lucide-react"
+import { Code, LayoutIcon, LayoutDashboardIcon, ListIcon, LogOut } from "lucide-react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useSession, signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -20,7 +21,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const { state } = useSidebar()
@@ -34,18 +35,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Create Landing Page",
-      url: "/projects",
-      icon: FolderIcon,
+      url: "/create",
+      icon: LayoutIcon,
     },
   ]
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader className="py-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg">
-              <a href="/" className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <Code className="h-5 w-5" />
                 </div>
@@ -53,7 +54,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="font-semibold">DevStudio</span>
                   <span className="text-xs text-muted-foreground">Web Builder</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -74,7 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   pathname === item.url ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80",
                 )}
               >
-                <a href={item.url} className="flex items-center gap-3">
+                <Link href={item.url} className="flex items-center gap-3">
                   <div
                     className={cn(
                       "flex h-5 w-5 items-center justify-center",
@@ -84,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     {item.icon && <item.icon className="h-4 w-4" />}
                   </div>
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
@@ -104,7 +105,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               )}
               tooltip="Settings"
             >
-              <a href="/settings" className="flex items-center gap-3">
+              <Link href="/settings" className="flex items-center gap-3">
                 <div
                   className={cn(
                     "flex h-5 w-5 items-center justify-center",
@@ -114,7 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <LayoutDashboardIcon className="h-4 w-4" />
                 </div>
                 <span>Settings</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
 

@@ -8,6 +8,7 @@ import ToolMessage from './chat/ToolMessage';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { ChatMessage, FileDescription } from '@/types/chat';
+import { useChatStore } from '@/store/chat';
 
 interface ChatPreviewProps {
   setActiveFile: (file: { content: string; path: string; isNew: boolean }) => void;
@@ -15,7 +16,10 @@ interface ChatPreviewProps {
 
 const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
   const [input, setInput] = useState<string>('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const chatStore = useChatStore();
+  console.log("ChatPreview rendering with messages:", chatStore.messages);
+  
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
       content: `
@@ -48,7 +52,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [localMessages, chatStore.messages]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -86,7 +90,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
 
       if (data.result) {
         const newMessages = data.result.map((msg: ChatMessage) => ({ ...msg, isNew: true }));
-        setMessages((prev) => [...prev, ...newMessages]);
+        setLocalMessages((prev: ChatMessage[]) => [...prev, ...newMessages]);
 
         if (data.result.length > 0) {
           setSelectedMessage(data.result[data.result.length - 1]);
@@ -101,26 +105,27 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
   };
 
   return (
-    <div className="w-full flex flex-col h-[calc(100vh-45px)] bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden min-h-0">
       {/* Chat Messages */}
-      <ScrollArea className="flex-1 px-6 py-4 w-full">
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">
-          {messages.filter(message => {
+      <ScrollArea className="flex-1 px-6 py-4 w-full min-h-0">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-5 min-h-0">
+          {[...localMessages, ...chatStore.messages].filter((message: ChatMessage) => {
             if (message.role === 'user' || message.role === 'assistant') return true;
             if (message.role === 'tool' && message.type === 'json-files') {
               return true;
             }
             return false;
-          }).map((message, idx) => (
-            message.isNew ? (
+          }).map((message, idx) => {
+            console.log("Rendering message:", message);
+            return ('isNew' in message && message.isNew) ? (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 onAnimationComplete={() => {
-                  setMessages(prev => 
-                    prev.map((msg, i) => 
+                  setLocalMessages((prev: ChatMessage[]) => 
+                    prev.map((msg: ChatMessage, i: number) => 
                       i === idx ? { ...msg, isNew: false } : msg
                     )
                   );
@@ -129,7 +134,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                 {message.role === 'user' ? (
                   <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
-                  <AiMessage key={idx} message={message?.content} />
+                  <AiMessage key={idx} message={message?.content} type={message?.type} />
                 ) : (
                   <ToolMessage 
                     key={idx} 
@@ -144,7 +149,7 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                 {message.role === 'user' ? (
                   <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
-                  <AiMessage key={idx} message={message?.content} />
+                  <AiMessage key={idx} message={message?.content} type={message?.type} />
                 ) : (
                   <ToolMessage 
                     key={idx} 
@@ -154,8 +159,8 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                   />
                 )}
               </div>
-            )
-          ))}
+            );
+          })}
           {isLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -171,8 +176,8 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
         </div>
       </ScrollArea>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-3 bg-white dark:bg-gray-800">
-        <div className="max-w-4xl mx-auto">
+      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-3 bg-white dark:bg-gray-800 shrink-0">
+        <div className="max-w-4xl mx-auto w-full">
           <InputBox
             input={input}
             setInput={setInput}
