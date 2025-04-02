@@ -119,3 +119,16 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #4b5563;
 }
+
+@layer components {
+  .header-gradient {
+    @apply flex items-center justify-between h-full px-5 py-1 m-1 rounded-lg shadow-lg backdrop-blur-sm;
+    background: linear-gradient(
+      to right,
+      hsl(var(--header-from) / 0.9),
+      hsl(var(--header-via) / 0.9),
+      hsl(var(--header-to) / 0.9)
+    );
+    border-bottom: 1px solid hsl(var(--header-border) / 0.2);
+  }
+}
