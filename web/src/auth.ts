@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { NextAuthOptions } from 'next-auth';
 import { getServerSession } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
@@ -53,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       }
       return false;
     },
-    async jwt({ token, account }: { token: any; account: any; profile: any }) {
+    async jwt({ token, account }) {
       if (account?.provider === 'google') {
         const res = await AuthService.signInWithGoogle(account.id_token!);
         if (res) {

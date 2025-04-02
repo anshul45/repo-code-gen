@@ -179,10 +179,7 @@ export const bootWebContainer = async (
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("Runtime Error:", errorMessage);
       appendTerminal(`❌ Runtime Error: ${errorMessage}\n`);
-      // Don't show WebContainer initialization errors in chat
-      if (!errorMessage.includes("Only a single WebContainer instance")) {
-        onError?.(`Runtime Error: ${errorMessage}`, 'assistant', 'error');
-      }
+      onError?.(`Runtime Error: ${errorMessage}`, 'assistant', 'error');
     });
     
     webcontainerInstance.on("server-ready", (port, url) => {

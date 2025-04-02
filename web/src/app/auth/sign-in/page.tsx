@@ -1,16 +1,12 @@
 "use client"
 
+import { Suspense } from "react"
 import { signIn } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { ErrorDisplay } from "./error-display"
 
 export default function AuthPage() {
-    const searchParams = useSearchParams()
-    const error = searchParams.get("error")
-
     const handleGoogleSignIn = async () => {
         await signIn("google", { callbackUrl: "/create" })
     }
@@ -23,12 +19,9 @@ export default function AuthPage() {
                     <CardDescription className="text-base">Sign in to continue to your dashboard</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {error && (
-                        <Alert variant="destructive" className="text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>{decodeURIComponent(error)}</AlertDescription>
-                        </Alert>
-                    )}
+                    <Suspense fallback={null}>
+                        <ErrorDisplay />
+                    </Suspense>
 
                     <Button
                         onClick={handleGoogleSignIn}
@@ -75,4 +68,3 @@ export default function AuthPage() {
         </div>
     )
 }
-
