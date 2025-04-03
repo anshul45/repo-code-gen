@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ChatModule } from './chat/chat.module';
+import { ProjectModule } from './project/project.module';
 import { RedisCacheModule } from './redis/redis.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { RedisCacheModule } from './redis/redis.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ProjectModule,
     AuthModule,
     PrismaModule,
     ChatModule,

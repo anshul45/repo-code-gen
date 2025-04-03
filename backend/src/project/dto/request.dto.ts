@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { Prisma } from '@prisma/client';
 
 export class CreateProjectDto {
   @IsString()
