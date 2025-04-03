@@ -69,7 +69,7 @@ interface PreviewFilesProps {
 
 const ToolMessage = ({ message, setSelectedMessage, setActiveFile, userId }: ToolMessageProps) => {
   const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
-  const { addFile, updateMountFile } = useFileStore();
+  const { addFile, updateMountFile, projectId } = useFileStore();
   const [generating, setGenerating] = useState<boolean>(false);
   const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
@@ -109,7 +109,8 @@ Important: Ensure the following for React/TypeScript components:
 2. Use proper TypeScript types and interfaces
 3. Follow React best practices and patterns`,
             user_id: userId,
-            intent: 'code'
+            intent: 'code',
+            project_id: projectId
           }),
         });
 
@@ -165,7 +166,8 @@ Important: Ensure the following for React/TypeScript components:
 4. Follow React best practices and patterns
 Please ensure code is generated properly.`,
               user_id: userId,
-              intent: 'code'
+              intent: 'code',
+              project_id: projectId
             }),
           });
 
@@ -216,7 +218,8 @@ Important: Ensure the following for React/TypeScript components:
 4. Follow React best practices and patterns
 Please ensure the response is valid JSON.`,
               user_id: userId,
-              intent: 'code'
+              intent: 'code',
+              project_id: projectId
             }),
           });
 

@@ -1,13 +1,13 @@
 export const API_BASE_URL = '/api';
 
-export async function* streamChat(message: string, userId: string): AsyncGenerator<string, void, unknown> {
+export async function* streamChat(message: string, userId: string, projectId?: string): AsyncGenerator<string, void, unknown> {
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, user_id: userId }),
+      body: JSON.stringify({ message, user_id: userId, project_id: projectId }),
     });
 
     if (!response.ok) {

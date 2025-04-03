@@ -66,7 +66,7 @@ export const useChatStore = create<ChatState>((set: SetState, get: GetState) => 
   },
 
   sendMessage: async (content: string, userId: string) => {
-    const { addMessage, setIsStreaming, updateStreamedContent } = get();
+    const { addMessage, setIsStreaming, updateStreamedContent, projectId } = get();
     
     try {
       // Add user message immediately
@@ -74,7 +74,7 @@ export const useChatStore = create<ChatState>((set: SetState, get: GetState) => 
       setIsStreaming(true);
       
       // Start streaming the assistant's response
-      for await (const chunk of streamChat(content, userId)) {
+      for await (const chunk of streamChat(content, userId, projectId || undefined)) {
         updateStreamedContent(chunk);
       }
       

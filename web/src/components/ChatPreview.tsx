@@ -70,6 +70,7 @@ const ChatPreview = ({ setActiveFile, userId }: ChatPreviewProps) => {
         body: JSON.stringify({
           message: input,
           user_id: userId,
+          project_id: chatStore.projectId,
         }),
       });
 
