@@ -195,6 +195,15 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
                 </div>
               </div>
 
+              {/* Center: Project Name */}
+              {chatStore.projectName && (
+                <div className="flex-1 text-center">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 truncate px-4 border-b-2 border-primary inline-block pb-1">
+                    {chatStore.projectName}
+                  </h2>
+                </div>
+              )}
+
               {/* Right side: Actions */}
               <div className="flex items-center gap-3">
                 <button
