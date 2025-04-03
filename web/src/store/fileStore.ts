@@ -35,6 +35,9 @@ const createFileChange = (
 interface FileState {
   files: DirectoryNode;
   fileChanges: FileChange | null;
+  projectId: string | null;
+  projectName: string | null;
+  setProject: (projectId: string, projectName: string) => void;
   updateFile: (filename: string, content: string, isSaved?: boolean) => void;
   addFile: (filename: string, content: string) => void;
   isMount: boolean;
@@ -53,7 +56,12 @@ export const useFileStore = create<FileState>((set) => ({
   isMount: false,
   mountFile: null,
   activeFile: null,
+  projectId: null,
+  projectName: null,
   lockedFiles: new Set<string>(),
+  
+  setProject: (projectId: string, projectName: string) => set({ projectId, projectName }),
+  
   setActiveFile: (file) => set({ activeFile: file }),
   lockFile: (filename) => set((state) => {
     const newLockedFiles = new Set(state.lockedFiles);
@@ -181,4 +189,4 @@ export const useFileStore = create<FileState>((set) => ({
         isMount: isNewFile,
       };
     }),
-}));
+}))

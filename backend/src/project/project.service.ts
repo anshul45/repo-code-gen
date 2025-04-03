@@ -9,8 +9,9 @@ export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createProject(userId: string, data: CreateProjectDto): Promise<ProjectResponseDto> {
-    // TODO: Implement agent to generate project name based on initialPrompt
-    const projectName = "New Project"; // Placeholder until agent is implemented
+    // Generate a project name based on the initial prompt
+    // This is a simple implementation - in the future, you might want to use an AI model
+    const projectName = this.generateProjectName(data.initialPrompt);
     
     const project = await this.prisma.project.create({
       data: {
@@ -24,6 +25,19 @@ export class ProjectService {
       id: project.id,
       name: project.name,
     };
+  }
+
+  // Simple function to generate a project name from the prompt
+  private generateProjectName(prompt: string): string {
+    // Extract first few words (up to 5) and capitalize each word
+    const words = prompt.split(/\s+/).slice(0, 5);
+    if (words.length === 0) return "New Project";
+    
+    // Create a name from the first few words
+    return words
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ")
+      .substring(0, 50); // Limit length
   }
 
   async getProject(projectId: string) {

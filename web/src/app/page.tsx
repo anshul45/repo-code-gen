@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { 
@@ -13,13 +13,76 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { createProject } from "@/services/project-api";
+import { useChatStore } from "@/store/chat";
+import { useFileStore } from "@/store/fileStore";
 
 export default function HomePage() {
     const router = useRouter();
-    const { status } = useSession();
+    const { data: session, status } = useSession();
+    console.log('Session status:', status);
+    console.log('Session data:', JSON.stringify(session, null, 2));
+    
     const [buildIdea, setBuildIdea] = useState('');
     const [projectType, setProjectType] = useState('mvp');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Access store functions
+    const { addMessage, setProject: setChatProject } = useChatStore();
+    const { setProject: setFileProject } = useFileStore();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!buildIdea.trim()) {
+            setError("Please enter what you want to build");
+            return;
+        }
+        
+        setIsSubmitting(true);
+        setError(null);
+        
+        try {
+            // Make sure we have a user ID
+            const userId = session?.id || '';
+            if (!userId) {
+                throw new Error("User ID not available. Please try logging in again.");
+            }
+            
+            console.log('Using userId:', userId);
+            
+            // Send the initial prompt to the backend
+            const projectData = await createProject(buildIdea, userId);
+            
+            // Store the project info in both stores
+            setChatProject(projectData.id, projectData.name);
+            setFileProject(projectData.id, projectData.name);
+            
+            // Add the initial prompt as the first message in the chat
+            addMessage(buildIdea, 'user');
+            
+            // Redirect based on selection
+            if (projectType === 'landing-page') {
+                router.push('/build/create');
+            } else {
+                router.push('/build/mvp');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to create project. Please try again.");
+            console.error("Error creating project:", err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
+    // Handle authentication
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            router.push('/auth/sign-in');
+        }
+    }, [status, router]);
+
+    // Show loading state while checking authentication
     if (status === 'loading') {
         return (
             <div className="w-full h-screen flex items-center justify-center">
@@ -28,26 +91,11 @@ export default function HomePage() {
         );
     }
 
-    if (status === 'unauthenticated') {
-        router.push('/auth/sign-in');
+    // Don't render the main content until we know we're authenticated
+    if (status !== 'authenticated') {
         return null;
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        
-        // Store the build idea in local storage or state management
-        if (buildIdea.trim()) {
-            localStorage.setItem('buildIdea', buildIdea);
-        }
-        
-        // Redirect based on selection
-        if (projectType === 'landing-page') {
-            router.push('/build/create');
-        } else {
-            router.push('/build/mvp');
-        }
-    };
 
     return (
         <div className="w-full h-screen flex flex-col items-center justify-center bg-[#0E121A]">
@@ -67,12 +115,26 @@ export default function HomePage() {
                             onChange={(e) => setBuildIdea(e.target.value)}
                             className="w-full p-6 text-lg bg-[#1E2431] text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none placeholder:text-gray-400"
                         />
+                        {error && (
+                            <p className="text-red-500 mt-2 text-sm">{error}</p>
+                        )}
                     </div>
                     
                     <div className="flex items-center space-x-4">
                         <div className="flex-1">
-                            <Button type="button" onClick={handleSubmit} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center">
-                                <Sparkles className="mr-2 h-5 w-5" /> Get Started
+                            <Button 
+                                type="button" 
+                                onClick={handleSubmit} 
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center justify-center"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <span className="animate-pulse">Processing...</span>
+                                ) : (
+                                    <>
+                                        <Sparkles className="mr-2 h-5 w-5" /> Get Started
+                                    </>
+                                )}
                             </Button>
                         </div>
                         

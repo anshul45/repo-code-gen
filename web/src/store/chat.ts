@@ -13,10 +13,13 @@ interface ChatState {
   messages: Message[];
   isStreaming: boolean;
   currentStreamedContent: string;
+  projectId: string | null;
+  projectName: string | null;
   addMessage: (content: string, role: 'user' | 'assistant' | 'tool', type?: string) => void;
   updateStreamedContent: (content: string) => void;
   setIsStreaming: (isStreaming: boolean) => void;
   sendMessage: (content: string, userId: string) => Promise<void>;
+  setProject: (projectId: string, projectName: string) => void;
 }
 
 type SetState = StoreApi<ChatState>['setState'];
@@ -26,6 +29,12 @@ export const useChatStore = create<ChatState>((set: SetState, get: GetState) => 
   messages: [],
   isStreaming: false,
   currentStreamedContent: '',
+  projectId: null,
+  projectName: null,
+
+  setProject: (projectId: string, projectName: string) => {
+    set({ projectId, projectName });
+  },
 
   addMessage: (content: string, role: 'user' | 'assistant' | 'tool', type?: string) => {
     const message: Message = {

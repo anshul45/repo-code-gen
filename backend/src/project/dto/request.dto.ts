@@ -5,4 +5,8 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   initialPrompt: string;
+  
+  @IsString()
+  @IsOptional()
+  userId?: string;
 }
