@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import type * as React from "react"
-import { Code, LayoutIcon, LayoutDashboardIcon, ListIcon, LogOut } from "lucide-react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
-import { cn } from "@/lib/utils"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { useSidebar } from "@/components/ui/sidebar"
+import type * as React from "react";
+import {
+  Code,
+  LayoutIcon,
+  LayoutDashboardIcon,
+  ListIcon,
+  LogOut,
+} from "lucide-react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useSidebar } from "@/components/ui/sidebar";
 
 import {
   Sidebar,
@@ -19,13 +25,17 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
-  const { data: session } = useSession()
-  const { state } = useSidebar()
-  const isCollapsed = state === "collapsed"
+export function AppSidebar({
+  variant = "inset",
+  collapsible = "icon",
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   const navMain = [
     {
@@ -35,10 +45,10 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
     },
     {
       title: "Create Landing Page",
-      url: "/create",
+      url: "/build/create",
       icon: LayoutIcon,
     },
-  ]
+  ];
 
   return (
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
@@ -52,7 +62,9 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">DevStudio</span>
-                  <span className="text-xs text-muted-foreground">Web Builder</span>
+                  <span className="text-xs text-muted-foreground">
+                    Web Builder
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -72,14 +84,18 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
                 isActive={pathname === item.url}
                 className={cn(
                   "my-1 transition-all duration-200",
-                  pathname === item.url ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80",
+                  pathname === item.url
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80"
                 )}
               >
                 <Link href={item.url} className="flex items-center gap-3">
                   <div
                     className={cn(
                       "flex h-5 w-5 items-center justify-center",
-                      pathname === item.url ? "text-primary" : "text-muted-foreground",
+                      pathname === item.url
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     )}
                   >
                     {item.icon && <item.icon className="h-4 w-4" />}
@@ -101,7 +117,9 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
               asChild
               className={cn(
                 "my-1 transition-all duration-200",
-                pathname === "/settings" ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80",
+                pathname === "/settings"
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-muted/80"
               )}
               tooltip="Settings"
             >
@@ -109,7 +127,9 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
                 <div
                   className={cn(
                     "flex h-5 w-5 items-center justify-center",
-                    pathname === "/settings" ? "text-primary" : "text-muted-foreground",
+                    pathname === "/settings"
+                      ? "text-primary"
+                      : "text-muted-foreground"
                   )}
                 >
                   <LayoutDashboardIcon className="h-4 w-4" />
@@ -121,7 +141,7 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
 
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={() => signOut({ callbackUrl: '/auth/sign-in' })}
+              onClick={() => signOut({ callbackUrl: "/auth/sign-in" })}
               className="my-1 transition-all duration-200 hover:bg-red-500/10 hover:text-red-500"
               tooltip="Sign Out"
             >
@@ -139,11 +159,21 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
         <div
           className={cn(
             "mx-2 mt-2 mb-4 overflow-hidden rounded-lg bg-muted/50 p-3 transition-all duration-200",
-            isCollapsed ? "items-center justify-center" : "flex items-center gap-3",
+            isCollapsed
+              ? "items-center justify-center"
+              : "flex items-center gap-3"
           )}
         >
-          <Avatar className={cn("border-2 border-background h-10 w-10 transition-all", isCollapsed ? "mx-auto" : "")}>
-            <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || "User"} />
+          <Avatar
+            className={cn(
+              "border-2 border-background h-10 w-10 transition-all",
+              isCollapsed ? "mx-auto" : ""
+            )}
+          >
+            <AvatarImage
+              src={session?.user?.image || ""}
+              alt={session?.user?.name || "User"}
+            />
             <AvatarFallback className="bg-primary/10 text-primary font-medium">
               {session?.user?.name?.charAt(0) || "U"}
             </AvatarFallback>
@@ -151,7 +181,9 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
 
           {!isCollapsed && (
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-medium text-sm">{session?.user?.name || "User"}</span>
+              <span className="truncate font-medium text-sm">
+                {session?.user?.name || "User"}
+              </span>
               <span className="truncate text-xs text-muted-foreground">
                 {session?.user?.email || "user@example.com"}
               </span>
@@ -162,5 +194,5 @@ export function AppSidebar({ variant = "inset", collapsible = "icon", ...props }
 
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

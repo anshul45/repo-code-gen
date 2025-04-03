@@ -4,18 +4,23 @@ import remarkGfm from 'remark-gfm'
 import { useChatStore } from '@/store/chat';
 
 interface AiMessageProps {
-  message: string;
-  type?: string;
+  message: string | null;
+  type?: string | null;
 }
 
-const isCompilationError = (message: string, type?: string) => {
+const isCompilationError = (message: string | null, type?: string | null) => {
+  console.log('isCompilationError called with:', { message, type });
+  if (!message) return false;
   return type === 'error' || message.includes("Failed to compile") || message.includes("Syntax Error");
 };
 
 const AiMessage = ({ message, type }: AiMessageProps) => {
   const chatStore = useChatStore();
+  console.log('AiMessage rendered with:', { message, type });
 
   const handleFixError = async () => {
+    if (!message) return;
+    
     let userId = localStorage.getItem('chatUserId');
     if (!userId) {
       userId = crypto.randomUUID();
