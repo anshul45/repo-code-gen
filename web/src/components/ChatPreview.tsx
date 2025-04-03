@@ -12,9 +12,10 @@ import { useChatStore } from '@/store/chat';
 
 interface ChatPreviewProps {
   setActiveFile: (file: { content: string; path: string; isNew: boolean }) => void;
+  userId: string;
 }
 
-const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
+const ChatPreview = ({ setActiveFile, userId }: ChatPreviewProps) => {
   const [input, setInput] = useState<string>('');
   const chatStore = useChatStore();
   console.log("ChatPreview rendering with messages:", chatStore.messages);
@@ -63,12 +64,6 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
     setIsLoading(true);
 
     try {
-      let userId = localStorage.getItem('chatUserId');
-      if (!userId) {
-        userId = crypto.randomUUID();
-        localStorage.setItem('chatUserId', userId);
-      }
-
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -134,13 +129,14 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                 {message.role === 'user' ? (
                   <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
-                  <AiMessage key={idx} message={message?.content} type={message?.type} />
+                  <AiMessage key={idx} message={message?.content} type={message?.type} userId={userId} />
                 ) : (
                   <ToolMessage 
                     key={idx} 
                     setSelectedMessage={setSelectedMessage} 
                     message={JSON.parse(message?.content) as FileDescription[]}
                     setActiveFile={setActiveFile}
+                    userId={userId}
                   />
                 )}
               </motion.div>
@@ -149,13 +145,14 @@ const ChatPreview = ({ setActiveFile }: ChatPreviewProps) => {
                 {message.role === 'user' ? (
                   <UserMessage key={idx} message={message?.content} />
                 ) : message.role === 'assistant' ? (
-                  <AiMessage key={idx} message={message?.content} type={message?.type} />
+                  <AiMessage key={idx} message={message?.content} type={message?.type} userId={userId} />
                 ) : (
                   <ToolMessage 
                     key={idx} 
                     setSelectedMessage={setSelectedMessage} 
                     message={JSON.parse(message?.content) as FileDescription[]}
                     setActiveFile={setActiveFile}
+                    userId={userId}
                   />
                 )}
               </div>

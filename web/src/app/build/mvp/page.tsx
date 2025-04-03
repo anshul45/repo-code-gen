@@ -12,7 +12,7 @@ export default async function MVPPage() {
 
     return (
         <main className="w-full h-[calc(100vh-100px)]">
-            <Chat mode="default" />
+            <Chat mode="default" userId={session.id} />
         </main>
     );
 }

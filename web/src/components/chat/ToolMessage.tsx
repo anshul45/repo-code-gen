@@ -67,7 +67,7 @@ interface PreviewFilesProps {
   isChecked: boolean;
 }
 
-const ToolMessage = ({ message, setSelectedMessage, setActiveFile }: ToolMessageProps) => {
+const ToolMessage = ({ message, setSelectedMessage, setActiveFile, userId }: ToolMessageProps) => {
   const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
   const { addFile, updateMountFile } = useFileStore();
   const [generating, setGenerating] = useState<boolean>(false);
@@ -108,7 +108,7 @@ Important: Ensure the following for React/TypeScript components:
 1. Use proper import paths with @/ prefix (e.g., '@/components/ui/button')
 2. Use proper TypeScript types and interfaces
 3. Follow React best practices and patterns`,
-            user_id: localStorage.getItem('chatUserId'),
+            user_id: userId,
             intent: 'code'
           }),
         });
@@ -164,7 +164,7 @@ Important: Ensure the following for React/TypeScript components:
 3. Use proper TypeScript types and interfaces
 4. Follow React best practices and patterns
 Please ensure code is generated properly.`,
-              user_id: localStorage.getItem('chatUserId'),
+              user_id: userId,
               intent: 'code'
             }),
           });
@@ -215,7 +215,7 @@ Important: Ensure the following for React/TypeScript components:
 3. Use proper TypeScript types and interfaces
 4. Follow React best practices and patterns
 Please ensure the response is valid JSON.`,
-              user_id: localStorage.getItem('chatUserId'),
+              user_id: userId,
               intent: 'code'
             }),
           });

@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PreviewPanel } from './PreviewPanel';
 
-export function Chat({ mode = "default" }: { mode?: "default" | "landing-page" }) {
+export function Chat({ mode = "default", userId }: { mode?: "default" | "landing-page", userId: string }) {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">(mode === "landing-page" ? "preview" : "code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
@@ -146,7 +146,10 @@ export function Chat({ mode = "default" }: { mode?: "default" | "landing-page" }
     <div className="w-full grid grid-cols-12 h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900 min-w-[1000px] overflow-hidden min-h-0">
       {/* Chat Preview */}
       <div className={`col-span-4 h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden min-w-0 min-h-0`}>
-        <ChatPreview setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} />
+        <ChatPreview 
+          setActiveFile={(file: { path: string; content: string; isNew:boolean } | null) => setActiveFile(file)} 
+          userId={userId}
+        />
       </div>
 
       {/* Right Section */}

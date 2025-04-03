@@ -6,6 +6,7 @@ import { useChatStore } from '@/store/chat';
 interface AiMessageProps {
   message: string | null;
   type?: string | null;
+  userId?: string;
 }
 
 const isCompilationError = (message: string | null, type?: string | null) => {
@@ -14,18 +15,12 @@ const isCompilationError = (message: string | null, type?: string | null) => {
   return type === 'error' || message.includes("Failed to compile") || message.includes("Syntax Error");
 };
 
-const AiMessage = ({ message, type }: AiMessageProps) => {
+const AiMessage = ({ message, type, userId }: AiMessageProps) => {
   const chatStore = useChatStore();
   console.log('AiMessage rendered with:', { message, type });
 
   const handleFixError = async () => {
-    if (!message) return;
-    
-    let userId = localStorage.getItem('chatUserId');
-    if (!userId) {
-      userId = crypto.randomUUID();
-      localStorage.setItem('chatUserId', userId);
-    }
+    if (!message || !userId) return;
     
     const cleanMessage = message.replace(/```/g, '').trim();
     await chatStore.sendMessage(`Please help me fix this error:\n${cleanMessage}`, userId);

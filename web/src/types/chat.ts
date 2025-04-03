@@ -45,4 +45,5 @@ export interface ToolMessageProps {
   message: FileDescription[];
   setSelectedMessage: SetSelectedMessageType;
   setActiveFile?: (file: { content: string; path: string; isNew: boolean }) => void;
+  userId: string;
 }

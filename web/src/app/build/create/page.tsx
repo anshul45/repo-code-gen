@@ -12,7 +12,7 @@ export default async function CreatePage() {
 
     return (
         <main className="w-full h-[calc(100vh-100px)]">
-            <Chat mode="landing-page" />
+            <Chat mode="landing-page" userId={session.id} />
         </main>
     );
 }
