@@ -35,6 +35,7 @@ export class RouterAgent {
   async routeQuery(
     userInput: string,
     outputFormat?: string,
+    projectId?: string,
   ): Promise<RoutingResponse> {
     try {
       const agent = await this.getOrCreateAgent();
@@ -56,7 +57,8 @@ export class RouterAgent {
     }
   }
 
-  clearConversation(userId: string): void {
-    this.activeSessions.delete(userId);
+  clearConversation(userId: string, projectId?: string): void {
+    const sessionKey = projectId ? `${userId}_${projectId}` : userId;
+    this.activeSessions.delete(sessionKey);
   }
 }

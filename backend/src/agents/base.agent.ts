@@ -358,9 +358,12 @@ export class BaseAgent {
           } else {
             console.warn(`Warning: Tool ${toolCall.function.name} not found!`);
           }
-          this.thread.push(...toolResponses);
-          this.overallThread.push(...toolResponses);
         }
+        
+        // Add all tool responses at once after processing all tool calls
+        this.thread.push(...toolResponses);
+        this.overallThread.push(...toolResponses);
+        
         toolCallCount++;
       }
 

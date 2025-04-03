@@ -12,7 +12,7 @@ export class CoderAgent {
     private readonly redisCacheService: RedisCacheService,
   ) {}
 
-  private async getOrCreateAgent(userId: string): Promise<BaseAgent> {
+  private async getOrCreateAgent(userId: string, projectId: string): Promise<BaseAgent> {
     const baseTemplatePath = path.join(
       process.cwd(),
       'src',
@@ -34,7 +34,7 @@ export class CoderAgent {
     // Try to read project context
     let projectContext = '';
     try {
-      const projectFile = `project_${userId}.md`;
+      const projectFile = `project_${userId}_${projectId}.md`;
       if (fs.existsSync(projectFile)) {
         projectContext = fs.readFileSync(projectFile, 'utf-8');
       }
@@ -58,7 +58,7 @@ export class CoderAgent {
       'coder_agent',
       'claude-3-7-sonnet-20250219',
       promptContent,
-      userId,
+      `${userId}_${projectId}`,
       0.6,
       [],
       this.configService.get('ANTHROPIC_API_URL'),
@@ -68,9 +68,11 @@ export class CoderAgent {
     return agent;
   }
 
-  async generateResponse(message: string, userId: string): Promise<Message[]> {
+  async generateResponse(message: string, userId: string, projectId?: string): Promise<Message[]> {
     try {
-      const agent = await this.getOrCreateAgent(userId);
+      // Default to a fallback projectId if none is provided
+      const finalProjectId = projectId || 'default';
+      const agent = await this.getOrCreateAgent(userId, finalProjectId);
       const thread = await agent.run(message, 'json');
       return thread.filter((msg) => msg.role !== 'system');
     } catch (error) {

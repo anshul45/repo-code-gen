@@ -20,8 +20,10 @@ export class ManagerAgent {
     this.activeSessions = new Map();
   }
 
-  private async getOrCreateAgent(userId: string): Promise<BaseAgent> {
-    if (!this.activeSessions.has(userId)) {
+  private async getOrCreateAgent(userId: string, projectId: string): Promise<BaseAgent> {
+    const sessionKey = `${userId}_${projectId}`;
+    
+    if (!this.activeSessions.has(sessionKey)) {
       const baseTemplatePath = path.join(
         process.cwd(),
         'src',
@@ -70,7 +72,7 @@ export class ManagerAgent {
           )
           .replace('{base_template}', JSON.stringify(baseTemplate))
           .replace('{ui_components_list}', uiComponentsList),
-        userId,
+        sessionKey,
         0.6,
         tools,
         this.configService.get('OPENAI_BASE_URL'),
@@ -78,15 +80,16 @@ export class ManagerAgent {
         'openai',
       );
 
-      this.activeSessions.set(userId, agent);
+      this.activeSessions.set(sessionKey, agent);
     }
 
-    return this.activeSessions.get(userId)!;
+    return this.activeSessions.get(sessionKey)!;
   }
 
-  async generateFiles(message: string, userId: string): Promise<Message[]> {
+  async generateFiles(message: string, userId: string, projectId?: string): Promise<Message[]> {
     try {
-      const agent = await this.getOrCreateAgent(userId);
+      const finalProjectId = projectId || 'default';
+      const agent = await this.getOrCreateAgent(userId, finalProjectId);
       const thread = await agent.run(message);
       return thread.filter((msg) => msg.role !== 'system');
     } catch (error) {
@@ -101,9 +104,10 @@ export class ManagerAgent {
     }
   }
 
-  async generateResponse(message: string, userId: string): Promise<Message[]> {
+  async generateResponse(message: string, userId: string, projectId?: string): Promise<Message[]> {
     try {
-      const agent = await this.getOrCreateAgent(userId);
+      const finalProjectId = projectId || 'default';
+      const agent = await this.getOrCreateAgent(userId, finalProjectId);
       const thread = await agent.run(message); // Allow more tool calls for planning
       return thread.filter((msg) => msg.role !== 'system');
     } catch (error) {
@@ -118,7 +122,9 @@ export class ManagerAgent {
     }
   }
 
-  clearConversation(userId: string): void {
-    this.activeSessions.delete(userId);
+  clearConversation(userId: string, projectId?: string): void {
+    const finalProjectId = projectId || 'default';
+    const sessionKey = `${userId}_${finalProjectId}`;
+    this.activeSessions.delete(sessionKey);
   }
 }

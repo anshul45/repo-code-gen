@@ -23,6 +23,7 @@ interface ChatRequest {
   message: string;
   user_id: string;
   intent?: string;
+  project_id?: string;
 }
 
 interface ChatResponse {
@@ -41,7 +42,7 @@ export class ChatController {
 
   @Post()
   async chat(@Body() body: ChatRequest): Promise<ChatResponse> {
-    const { message, user_id } = body;
+    const { message, user_id, project_id } = body;
 
     if (!message || !user_id) {
       throw new HttpException(
@@ -52,18 +53,18 @@ export class ChatController {
 
     try {
       // First, use the router agent to determine which agent should handle the request
-      const routing = await this.routerAgent.routeQuery(message, 'json');
+      const routing = await this.routerAgent.routeQuery(message, 'json', project_id);
       let result;
 
       switch (routing.category) {
         case 'manager_agent':
-          result = await this.managerAgent.generateResponse(message, user_id);
+          result = await this.managerAgent.generateResponse(message, user_id, project_id);
           break;
         case 'editor_agent':
-          result = await this.editorAgent.generateResponse(message, user_id);
+          result = await this.editorAgent.generateResponse(message, user_id, project_id);
           break;
         case 'coder_agent':
-          result = await this.coderAgent.generateResponse(message, user_id);
+          result = await this.coderAgent.generateResponse(message, user_id, project_id);
           break;
         default:
           throw new Error('Invalid routing category');

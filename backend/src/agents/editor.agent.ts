@@ -18,8 +18,10 @@ export class EditorAgent {
     this.activeSessions = new Map();
   }
 
-  private async getOrCreateAgent(userId: string): Promise<BaseAgent> {
-    if (!this.activeSessions.has(userId)) {
+  private async getOrCreateAgent(userId: string, projectId: string): Promise<BaseAgent> {
+    const sessionKey = `${userId}_${projectId}`;
+    
+    if (!this.activeSessions.has(sessionKey)) {
       const baseTemplatePath = path.join(
         process.cwd(),
         'src',
@@ -55,7 +57,7 @@ export class EditorAgent {
             'utf-8',
           )
           .replace('{base_template}', JSON.stringify(baseTemplate)),
-        userId,
+        sessionKey,
         1,
         tools,
         'gemini',
@@ -63,18 +65,20 @@ export class EditorAgent {
         this.configService.get('GEMINI_API_KEY'),
       );
 
-      this.activeSessions.set(userId, agent);
+      this.activeSessions.set(sessionKey, agent);
     }
 
-    return this.activeSessions.get(userId)!;
+    return this.activeSessions.get(sessionKey)!;
   }
 
   async generateResponse(
     userInput: string,
     userId: string,
+    projectId?: string,
   ): Promise<Message[]> {
     try {
-      const agent = await this.getOrCreateAgent(userId);
+      const finalProjectId = projectId || 'default';
+      const agent = await this.getOrCreateAgent(userId, finalProjectId);
       const response = await agent.run(userInput);
       return response.filter((msg) => msg.role !== 'system');
     } catch (error) {
@@ -89,7 +93,9 @@ export class EditorAgent {
     }
   }
 
-  clearConversation(userId: string): void {
-    this.activeSessions.delete(userId);
+  clearConversation(userId: string, projectId?: string): void {
+    const finalProjectId = projectId || 'default';
+    const sessionKey = `${userId}_${finalProjectId}`;
+    this.activeSessions.delete(sessionKey);
   }
 }
