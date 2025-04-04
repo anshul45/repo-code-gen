@@ -76,6 +76,7 @@ export const bootWebContainer = async (
   onError?: (error: string, role?: 'user' | 'assistant' | 'tool', type?: string) => void
 ) => {
   console.log("Booting WebContainer...");
+  console.log("files   : ", files)
   
   try {
     setIsLoadingPreview(true); 

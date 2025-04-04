@@ -17,6 +17,9 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PreviewPanel } from './PreviewPanel';
 import { getProjectById } from '@/services/project-api';
 
+// Global variable to track WebContainer boot state across the application
+let isWebContainerBooting = false;
+
 export function Chat({ mode = "default", userId, projectId }: { mode?: "default" | "landing-page", userId: string, projectId?: string }) {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">(mode === "landing-page" ? "preview" : "code");
@@ -42,6 +45,41 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
   const [url,setUrl] = useState<string|null>(null);
   const chatStore = useChatStore();
+
+  // Add a separate state to track when WebContainer should initialize
+  const [shouldInitWebContainer, setShouldInitWebContainer] = useState<boolean>(false);
+  
+  // Monitor file changes and set the shouldInitWebContainer flag when files are ready
+  useEffect(() => {
+    // Skip if we're already initializing or if WebContainer is already set up
+    if (shouldInitWebContainer || webcontainer) return;
+    
+    const fileCount = Object.keys(files).length;
+    console.log(`[DEBUG] File count changed: ${fileCount}`);
+    
+    if (fileCount > 0) {
+      // If we have files and we're not loading a project, we can initialize
+      if (!projectId || !isLoadingProject) {
+        console.log('[DEBUG] Files are ready, preparing to boot WebContainer');
+        // Use setTimeout to ensure all file operations are complete
+        setTimeout(() => {
+          setShouldInitWebContainer(true);
+        }, 1000); // 1 second delay to ensure state updates are complete
+      }
+    }
+  }, [files, projectId, isLoadingProject, webcontainer, shouldInitWebContainer]);
+  
+  // Separate effect for project loading completion
+  useEffect(() => {
+    // When project loading finishes and we have files, prepare to initialize WebContainer
+    if (!isLoadingProject && projectId && Object.keys(files).length > 0 && !webcontainer && !shouldInitWebContainer) {
+      console.log('[DEBUG] Project loading completed, preparing to boot WebContainer');
+      // Use setTimeout to ensure all file operations are complete
+      setTimeout(() => {
+        setShouldInitWebContainer(true);
+      }, 1000); // 1 second delay to ensure state updates are complete
+    }
+  }, [isLoadingProject, projectId, files, webcontainer, shouldInitWebContainer]);
 
   // Override console.log to capture debug logs
   useEffect(() => {
@@ -168,6 +206,31 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
                 console.log(`[DEBUG] Skipping non-string content for path: ${path}, type: ${typeof content}`);
               }
             });
+            
+            // Make sure package.json is at root level for WebContainer
+            if (!files['package.json'] && !files['/package.json']) {
+              console.log('[DEBUG] No package.json found at root level, creating default');
+              const defaultPackageJson = {
+                name: "nextjs-project",
+                version: "0.1.0",
+                private: true,
+                scripts: {
+                  dev: "next dev",
+                  build: "next build",
+                  start: "next start", 
+                  lint: "next lint"
+                },
+                dependencies: {
+                  "next": "^13.5.1",
+                  "react": "^18.2.0",
+                  "react-dom": "^18.2.0"
+                }
+              };
+              
+              projectStore.addFile('package.json', JSON.stringify(defaultPackageJson, null, 2));
+            }
+            
+            console.log('[DEBUG] Project files loaded successfully, WebContainer can now boot');
           }
         } else {
           console.log(`[DEBUG] Using landingPageStore for landing-page mode`);
@@ -228,8 +291,41 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
 
   useEffect(() => {
     const initialize = async () => {
-      if (!webcontainer) {
-        console.log('[DEBUG] Initializing WebContainer with files:', Object.keys(files).length);
+      // Only initialize if shouldInitWebContainer is true and webcontainer doesn't exist yet
+      if (!shouldInitWebContainer || webcontainer || isWebContainerBooting) return;
+      
+      // Set global flag to prevent multiple initialization attempts
+      isWebContainerBooting = true;
+      
+      console.log('[DEBUG] Starting WebContainer initialization with files:', Object.keys(files).length);
+      
+      // Reset the flag to prevent multiple initializations
+      setShouldInitWebContainer(false);
+      
+      try {
+        // Ensure we have a package.json
+        if (!files['package.json'] && typeof projectStore.addFile === 'function') {
+          console.log('[DEBUG] No package.json found before booting, creating default one');
+          const defaultPackageJson = {
+            name: "nextjs-project",
+            version: "0.1.0",
+            private: true,
+            scripts: {
+              dev: "next dev",
+              build: "next build",
+              start: "next start",
+              lint: "next lint"
+            },
+            dependencies: {
+              "next": "^13.5.1",
+              "react": "^18.2.0",
+              "react-dom": "^18.2.0"
+            }
+          };
+          
+          projectStore.addFile('package.json', JSON.stringify(defaultPackageJson, null, 2));
+        }
+        
         const instance = await bootWebContainer(
           files, 
           setIsLoadingPreview, 
@@ -245,10 +341,12 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
             console.log("Current chat messages:", chatStore.messages);
           }
         );
+        
         console.log('[DEBUG] WebContainer instance created:', !!instance);
-        setWebcontainer(instance);
-
+        
         if (instance) {
+          setWebcontainer(instance);
+          
           // Check if package.json exists and is accessible
           try {
             const rootFiles = await instance.fs.readdir('/');
@@ -351,12 +449,19 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
             console.error('[DEBUG] Error running initial commands:', e);
             appendTerminal(`❌ Error during initialization: ${e}\n`);
           }
+        } else {
+          console.error('[DEBUG] Failed to create WebContainer instance');
         }
+      } catch (error) {
+        console.error('[DEBUG] Error during WebContainer initialization:', error);
+      } finally {
+        // Reset the global flag regardless of success or failure
+        isWebContainerBooting = false;
       }
     };
 
     initialize();
-  }, [webcontainer, mode, files, lockFile, unlockFile]);
+  }, [shouldInitWebContainer, webcontainer, files, setIsLoadingPreview, appendTerminal, lockFile, unlockFile, chatStore]);
 
   useEffect(() => {
     if (fileChanges && 'isSaved' in fileChanges && fileChanges.isSaved) {
