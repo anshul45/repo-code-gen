@@ -2,6 +2,7 @@ const NEXT_PUBLIC_API_URL = "http://localhost:3001"
 export interface CreateProjectResponse {
   id: string;
   name: string;
+  codebase : Record<string, any>;
 }
 
 export interface Project {
