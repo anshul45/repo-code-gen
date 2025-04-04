@@ -1,149 +1,133 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import * as fs from 'fs';
-import * as path from 'path';
 
 @Injectable()
 export class CodebaseSyncService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async syncCodebaseToMongoDB(userId: string, projectId: string): Promise<void> {
+  /**
+   * Updates a specific file in the project's codebase
+   * @param projectId The project ID
+   * @param filePath The path of the file to update
+   * @param content The new content of the file
+   */
+  async updateFile(projectId: string, filePath: string, content: string): Promise<void> {
     try {
-      // Check if the project exists
+      // Get the current project
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
       });
 
       if (!project) {
-        console.error(`Project with ID ${projectId} not found for user ${userId}`);
+        console.error(`Project with ID ${projectId} not found`);
         return;
       }
 
-      // Read the project file from the filesystem
-      const projectFilePath = path.resolve(`project_${userId}_${projectId}.md`);
+      // Get the current codebase
+      const codebase = project.codebase as Record<string, any>;
       
-      if (!fs.existsSync(projectFilePath)) {
-        console.log(`Project file not found at ${projectFilePath}, nothing to sync`);
-        return;
-      }
-
-      const projectContext = fs.readFileSync(projectFilePath, 'utf-8');
+      // Update the file in the codebase
+      this.addFileToCodebase(codebase, filePath, content);
       
-      // Parse the MD file to extract file structures
-      const codebase = this.parseCodebaseFromMarkdown(projectContext);
-
-      // Update the MongoDB record with the parsed codebase
+      // Save the updated codebase back to the database
       await this.prisma.project.update({
         where: { id: projectId },
         data: {
           codebase,
-          updatedAt: new Date(), // Ensure the updatedAt timestamp is refreshed
+          updatedAt: new Date(),
         },
       });
-
-      console.log(`Successfully synced codebase to MongoDB for project ${projectId}`);
+      
+      console.log(`Successfully updated file ${filePath} in project ${projectId}`);
     } catch (error) {
-      console.error('Error syncing codebase to MongoDB:', error);
+      console.error('Error updating file in codebase:', error);
+      throw error;
     }
   }
 
-  async syncCodebaseFromMongoDB(userId: string, projectId: string): Promise<void> {
+  /**
+   * Updates multiple files in the project's codebase at once
+   * @param projectId The project ID
+   * @param files Array of files with their paths and contents
+   */
+  async updateMultipleFiles(
+    projectId: string, 
+    files: { path: string; content: string }[]
+  ): Promise<void> {
     try {
-      // Check if the project exists
+      // Get the current project
       const project = await this.prisma.project.findUnique({
         where: { id: projectId },
       });
 
       if (!project) {
-        console.error(`Project with ID ${projectId} not found for user ${userId}`);
+        console.error(`Project with ID ${projectId} not found`);
         return;
       }
 
-      // Check if the codebase is empty
-      if (!project.codebase || Object.keys(project.codebase as any).length === 0) {
-        console.log(`Codebase is empty for project ${projectId}, nothing to sync`);
-        return;
-      }
-
-      // Generate markdown content from the codebase
-      const markdownContent = this.generateMarkdownFromCodebase(project.codebase as any);
+      // Get the current codebase
+      const codebase = project.codebase as Record<string, any>;
       
-      // Define the project file path
-      const projectFilePath = path.resolve(`project_${userId}_${projectId}.md`);
-      
-      // Write or append to the file
-      const timestamp = new Date().toISOString();
-      const newContent = `\n\n# Loaded From MongoDB - ${timestamp}\n\n${markdownContent}`;
-      
-      if (!fs.existsSync(projectFilePath)) {
-        fs.writeFileSync(projectFilePath, newContent.trim(), 'utf-8');
-      } else {
-        // Append to existing file
-        fs.appendFileSync(projectFilePath, newContent, 'utf-8');
+      // Update each file in the codebase
+      for (const file of files) {
+        this.addFileToCodebase(codebase, file.path, file.content);
       }
       
-      console.log(`Successfully synced codebase from MongoDB to filesystem for project ${projectId}`);
+      // Save the updated codebase back to the database
+      await this.prisma.project.update({
+        where: { id: projectId },
+        data: {
+          codebase,
+          updatedAt: new Date(),
+        },
+      });
+      
+      console.log(`Successfully updated ${files.length} files in project ${projectId}`);
     } catch (error) {
-      console.error('Error syncing codebase from MongoDB:', error);
+      console.error('Error updating multiple files in codebase:', error);
+      throw error;
     }
   }
 
-  private generateMarkdownFromCodebase(codebase: Record<string, any>): string {
-    const files: { path: string; content: string }[] = [];
-    
-    const extractFiles = (obj: Record<string, any>, currentPath: string = '') => {
-      for (const [key, value] of Object.entries(obj)) {
-        if (!value || typeof value !== 'object') continue;
-        
-        if ('file' in value && value.file) {
-          files.push({
-            path: `${currentPath}${key}`,
-            content: value.file.contents,
-          });
-        } else if ('directory' in value) {
-          extractFiles(value.directory, `${currentPath}${key}/`);
-        }
+  /**
+   * Gets the content of a specific file from the project's codebase
+   * @param projectId The project ID
+   * @param filePath The path of the file to get
+   * @returns The content of the file, or null if not found
+   */
+  async getFileContent(projectId: string, filePath: string): Promise<string | null> {
+    try {
+      // Get the current project
+      const project = await this.prisma.project.findUnique({
+        where: { id: projectId },
+      });
+
+      if (!project) {
+        console.error(`Project with ID ${projectId} not found`);
+        return null;
       }
-    };
-    
-    extractFiles(codebase);
-    
-    return files
-      .map(file => `## ${file.path}\n${file.content}\n\`\`\``)
-      .join('\n\n');
-  }
 
-  private parseCodebaseFromMarkdown(markdownContent: string): Record<string, any> {
-    const codebase: Record<string, any> = {};
-    
-    // Split by sections (each file is a section)
-    const fileSections = markdownContent.split('## ').filter(Boolean);
-    
-    for (const section of fileSections) {
-      // Extract file path and content
-      const firstLineEnd = section.indexOf('\n');
-      if (firstLineEnd === -1) continue;
+      // Get the current codebase
+      const codebase = project.codebase as Record<string, any>;
       
-      const filePath = section.substring(0, firstLineEnd).trim();
-      const fileContent = section.substring(firstLineEnd).trim();
+      // Get the file from the codebase
+      const fileContent = this.getFileFromCodebase(codebase, filePath);
       
-      if (!filePath || !fileContent) continue;
-      
-      // Add to codebase structure
-      this.addFileToCodebase(codebase, filePath, fileContent);
+      return fileContent;
+    } catch (error) {
+      console.error('Error getting file from codebase:', error);
+      return null;
     }
-    
-    return codebase;
   }
 
+  /**
+   * Helper method to add a file to the codebase structure
+   */
   private addFileToCodebase(
     codebase: Record<string, any>,
     filePath: string,
     content: string
   ): void {
-    // Remove trailing ```
-    content = content.replace(/```\s*$/, '').trim();
-    
     // Split path components
     const pathParts = filePath.split('/');
     const filename = pathParts.pop() || '';
@@ -170,5 +154,36 @@ export class CodebaseSyncService {
         }
       };
     }
+  }
+
+  /**
+   * Helper method to get a file from the codebase structure
+   */
+  private getFileFromCodebase(
+    codebase: Record<string, any>,
+    filePath: string
+  ): string | null {
+    // Split path components
+    const pathParts = filePath.split('/');
+    const filename = pathParts.pop() || '';
+    
+    // Navigate directory structure
+    let current = codebase;
+    for (const part of pathParts) {
+      if (!part) continue;
+      
+      if (!current[part] || !current[part].directory) {
+        return null; // Directory not found
+      }
+      
+      current = current[part].directory;
+    }
+    
+    // Get file at the final level
+    if (filename && current[filename] && current[filename].file) {
+      return current[filename].file.contents;
+    }
+    
+    return null; // File not found
   }
 } 

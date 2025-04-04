@@ -74,10 +74,7 @@ export class ProjectService {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
 
-    // When a project is opened, sync its codebase from MongoDB to the filesystem
-    // This ensures that if there's codebase data in MongoDB, it's available as a markdown file
-    await this.codebaseSyncService.syncCodebaseFromMongoDB(userId, projectId);
-
+    // No need to sync to filesystem anymore
     return project;
   }
 

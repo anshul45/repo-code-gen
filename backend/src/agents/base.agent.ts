@@ -14,6 +14,7 @@ import { RedisCacheService } from '../redis/redis.service';
 import { MessageType } from '../types/message.types';
 import { jsonrepair } from 'jsonrepair';
 import { parse } from 'json5';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface Tool {
   name: string;
@@ -97,6 +98,7 @@ export class BaseAgent {
     protected readonly baseUrl: string | null = null,
     protected readonly apiKey: string | null = null,
     protected readonly clientType: string = 'openai',
+    protected readonly prismaService?: PrismaService,
   ) {
     if (this.clientType === 'anthropic') {
       this.client = new Anthropic({
@@ -455,11 +457,41 @@ export class BaseAgent {
     response: Record<string, FileStructure>,
   ): Promise<void> {
     try {
-      console.log(`[BaseAgent:${this.name}] Storing generated code for session ${this.sessionId}`);
+      console.log(`[BaseAgent:${this.name}] Processing generated code for session ${this.sessionId}`);
       console.log(`[BaseAgent:${this.name}] Response keys: ${Object.keys(response).join(', ')}`);
       
+      // Extract user and project IDs from session ID
+      if (!this.sessionId) {
+        console.error(`[BaseAgent:${this.name}] No sessionId provided, cannot save to database`);
+        return;
+      }
+      
+      const [userId, projectId] = this.sessionId.split('_');
+      
+      if (!userId || !projectId) {
+        console.error(`[BaseAgent:${this.name}] Invalid sessionId format: ${this.sessionId}`);
+        return;
+      }
+      
+      // If no PrismaService is injected, we can't proceed
+      if (!this.prismaService) {
+        console.error(`[BaseAgent:${this.name}] PrismaService not available, cannot save to database`);
+        return;
+      }
+      
+      // Get current project from the database
+      const project = await this.prismaService.project.findUnique({
+        where: { id: projectId },
+      });
+      
+      if (!project) {
+        console.error(`[BaseAgent:${this.name}] Project with ID ${projectId} not found`);
+        return;
+      }
+      
+      // Extract files from the response
       const extractedFiles: { path: string; content: string }[] = [];
-
+      
       const extractFiles = (
         obj: Record<string, FileStructure>,
         currentPath: string = '',
@@ -486,64 +518,83 @@ export class BaseAgent {
           }
         }
       };
-
+      
       extractFiles(response);
       console.log(`[BaseAgent:${this.name}] Extracted ${extractedFiles.length} files from response`);
       
-      // Create markdown content
-      const markdownContent = extractedFiles
-        .map((file) => `## ${file.path}\n${file.content}\n\`\`\``)
-        .join('\n\n');
-
-      const filePath = `project_${this.sessionId}.md`;
-      const timestamp = new Date().toISOString();
-      const newContent = `\n\n# Generated Code - ${timestamp}\n\n${markdownContent}`;
-
-      console.log(`[BaseAgent:${this.name}] Writing to file: ${filePath}`);
+      // Get the current codebase from the project
+      let codebase = project.codebase as Record<string, any>;
       
-      if (!(await this.fileExists(filePath))) {
-        console.log(`[BaseAgent:${this.name}] Creating new file: ${filePath}`);
-        await this.addFile(filePath, newContent.trim());
-      } else {
-        console.log(`[BaseAgent:${this.name}] Appending to existing file: ${filePath}`);
-        await this.appendToFile(filePath, newContent);
+      // Update the codebase with the new/updated files
+      for (const file of extractedFiles) {
+        console.log(`[BaseAgent:${this.name}] Updating file in codebase: ${file.path}`);
+        this.updateFileInCodebase(codebase, file.path, file.content);
       }
       
-      console.log(`[BaseAgent:${this.name}] Successfully stored generated code`);
+      // Save the updated codebase back to the database
+      await this.prismaService.project.update({
+        where: { id: projectId },
+        data: {
+          codebase,
+          updatedAt: new Date(), // Update the timestamp
+        },
+      });
+      
+      console.log(`[BaseAgent:${this.name}] Successfully updated codebase in database for project ${projectId}`);
     } catch (error) {
       console.error(`[BaseAgent:${this.name}] Error storing generated code:`, error);
       throw error;
     }
   }
 
-  protected async fileExists(path: string): Promise<boolean> {
-    try {
-      await access(path);
-      return true;
-    } catch {
-      return false;
+  // New method to update files in codebase structure
+  private updateFileInCodebase(
+    codebase: Record<string, any>,
+    filePath: string,
+    content: string
+  ): void {
+    // Split path components
+    const pathParts = filePath.split('/');
+    const filename = pathParts.pop() || '';
+    
+    // Navigate/create directory structure
+    let current = codebase;
+    for (const part of pathParts) {
+      if (!part) continue;
+      
+      if (!current[part]) {
+        current[part] = { directory: {} };
+      } else if (!current[part].directory) {
+        current[part].directory = {};
+      }
+      
+      current = current[part].directory;
     }
+    
+    // Add or update file at the final level
+    if (filename) {
+      current[filename] = {
+        file: {
+          contents: content
+        }
+      };
+    }
+  }
+
+  // Keep these methods for backwards compatibility but make them do nothing
+  protected async fileExists(path: string): Promise<boolean> {
+    console.log(`[BaseAgent:${this.name}] fileExists called but now using database instead, path: ${path}`);
+    return false;
   }
 
   protected async addFile(path: string, content: string): Promise<void> {
-    try {
-      await writeFile(path, content, 'utf8');
-      console.log(`[BaseAgent:${this.name}] Successfully created file: ${path}`);
-    } catch (error) {
-      console.error(`[BaseAgent:${this.name}] Error creating file ${path}:`, error);
-      throw error;
-    }
+    console.log(`[BaseAgent:${this.name}] addFile called but now using database instead, path: ${path}`);
+    // No-op as we're using the database
   }
 
   protected async appendToFile(path: string, content: string): Promise<void> {
-    try {
-      await appendFile(path, content, 'utf8');
-      console.log(`[BaseAgent:${this.name}] Successfully appended to file: ${path}`);
-      console.log(`[BaseAgent:${this.name}] Successfully wrote to file: ${path}`);
-    } catch (error) {
-      console.error(`[BaseAgent:${this.name}] Error writing to file ${path}:`, error);
-      throw error;
-    }
+    console.log(`[BaseAgent:${this.name}] appendToFile called but now using database instead, path: ${path}`);
+    // No-op as we're using the database
   }
 
   protected async saveThread(): Promise<void> {

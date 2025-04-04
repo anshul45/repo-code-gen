@@ -4,12 +4,14 @@ import { RedisCacheService } from '../redis/redis.service';
 import { BaseAgent, Message } from './base.agent';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CoderAgent {
   constructor(
     private readonly configService: ConfigService,
     private readonly redisCacheService: RedisCacheService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   private async getOrCreateAgent(userId: string, projectId: string): Promise<BaseAgent> {
@@ -31,15 +33,20 @@ export class CoderAgent {
       'utf-8',
     );
 
-    // Try to read project context
+    // Get project context from database
     let projectContext = '';
     try {
-      const projectFile = `project_${userId}_${projectId}.md`;
-      if (fs.existsSync(projectFile)) {
-        projectContext = fs.readFileSync(projectFile, 'utf-8');
+      // Get the project from the database
+      const project = await this.prismaService.project.findUnique({
+        where: { id: projectId },
+      });
+      
+      if (project?.codebase) {
+        // Convert the codebase structure to a string representation for the prompt
+        projectContext = this.codebaseToMarkdown(project.codebase as Record<string, any>);
       }
     } catch (error) {
-      console.error('Error reading project context:', error);
+      console.error('Error getting project context from database:', error);
     }
 
     const promptContent = fs
@@ -50,7 +57,7 @@ export class CoderAgent {
       .replace('{{base_template}}', JSON.stringify(baseTemplate))
       .replace('{{ui_components}}', uiComponentsMd)
       .replace('{{lucid_react_components}}', lucidReactComponents)
-      .replace('{{existing_code}}', projectContext ?? '');
+      .replace('{{existing_code}}', projectContext || '');
 
     const agent = new BaseAgent(
       this.configService,
@@ -64,8 +71,35 @@ export class CoderAgent {
       this.configService.get('ANTHROPIC_API_URL'),
       this.configService.get('ANTHROPIC_API_KEY'),
       'anthropic',
+      this.prismaService,
     );
     return agent;
+  }
+
+  // Helper method to convert codebase to markdown format
+  private codebaseToMarkdown(codebase: Record<string, any>): string {
+    const files: { path: string; content: string }[] = [];
+    
+    const extractFiles = (obj: Record<string, any>, currentPath: string = '') => {
+      for (const [key, value] of Object.entries(obj)) {
+        if (!value || typeof value !== 'object') continue;
+        
+        if ('file' in value && value.file) {
+          files.push({
+            path: `${currentPath}${key}`,
+            content: value.file.contents,
+          });
+        } else if ('directory' in value) {
+          extractFiles(value.directory, `${currentPath}${key}/`);
+        }
+      }
+    };
+    
+    extractFiles(codebase);
+    
+    return files
+      .map(file => `## ${file.path}\n${file.content}\n\`\`\``)
+      .join('\n\n');
   }
 
   async generateResponse(message: string, userId: string, projectId?: string): Promise<Message[]> {

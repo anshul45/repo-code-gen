@@ -110,14 +110,6 @@ export class ChatController {
         }
       }
 
-      // Sync the codebase with MongoDB after processing the request
-      // Only if a project_id is provided and the agent generated code
-      if (project_id) {
-        // Run this asynchronously to avoid blocking the response
-        this.codebaseSyncService.syncCodebaseToMongoDB(user_id, project_id)
-          .catch(error => console.error('Failed to sync codebase:', error));
-      }
-
       return { result };
     } catch (error) {
       return { error: error.message };

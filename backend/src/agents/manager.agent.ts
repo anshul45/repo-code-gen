@@ -6,6 +6,7 @@ import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description
 import { ImageSearchTool } from '../tools/image-search/image-search.tool';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ManagerAgent {
@@ -16,6 +17,7 @@ export class ManagerAgent {
     private readonly redisCacheService: RedisCacheService,
     private readonly getFilesWithDescriptionTool: GetFilesWithDescriptionTool,
     private readonly imageSearchTool: ImageSearchTool,
+    private readonly prismaService: PrismaService,
   ) {
     this.activeSessions = new Map();
   }
@@ -78,6 +80,7 @@ export class ManagerAgent {
         this.configService.get('OPENAI_BASE_URL'),
         this.configService.get('OPENAI_API_KEY'),
         'openai',
+        this.prismaService,
       );
 
       this.activeSessions.set(sessionKey, agent);
