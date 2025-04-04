@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { Project, getProjectById } from '@/services/project-api';
 import { resetWebContainer, loadProjectIntoWebContainer } from '@/services/webContainer';
 import { useChatStore } from '@/store/chat';
-import { files as templateFiles } from "@/common/next_template";
 
 // File entry structure
 export interface FileEntry {
@@ -100,8 +99,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   lockedFiles: new Set<string>(),
   activeFile: null,
   
-  // Legacy file structure
-  legacyFiles: templateFiles,
+  // Legacy file structure - initialize as empty object instead of templateFiles
+  legacyFiles: {},
   
   // Project ID and Name
   projectId: null,
@@ -195,10 +194,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((state) => {
       // Check for locked files
       if (state.lockedFiles.has(filename)) {
-        console.warn(`Attempted to modify locked file: ${filename}`);
+        console.warn(`[DEBUG] projectStore: Attempted to modify locked file: ${filename}`);
         return state;
       }
       
+      console.log(`[DEBUG] projectStore: Adding file ${filename}`);
       // Update modern Map-based files
       const newFiles = new Map(state.files);
       const isNewFile = !newFiles.has(filename);
@@ -253,10 +253,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((state) => {
       // Check for locked files
       if (state.lockedFiles.has(filename)) {
-        console.warn(`Attempted to modify locked file: ${filename}`);
+        console.warn(`[DEBUG] projectStore: Attempted to modify locked file: ${filename}`);
         return state;
       }
       
+      console.log(`[DEBUG] projectStore: Updating file ${filename}, isSaved: ${isSaved}`);
       // Update modern Map-based files
       const newFiles = new Map(state.files);
       const existingFile = newFiles.get(filename);
@@ -332,7 +333,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({
       files: new Map<string, FileEntry>(),
       currentFile: null,
-      legacyFiles: templateFiles,
+      legacyFiles: {}, // Initialize as empty object instead of templateFiles
       fileChanges: null,
       isMount: false,
       mountFile: null,
@@ -346,8 +347,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   
   updateMountFile: (file: string) => {
     set((state) => {
+      console.log('[DEBUG] projectStore: updateMountFile called');
       try {
         const parsedFiles = JSON.parse(file);
+        console.log(`[DEBUG] projectStore: Parsed mount file with ${Object.keys(parsedFiles).length} files`);
+        
+        // Validate file structure
+        let hasValidStructure = true;
+        for (const [key, value] of Object.entries(parsedFiles)) {
+          if (typeof value !== 'string' && typeof value !== 'object') {
+            console.error(`[DEBUG] projectStore: Invalid file structure for ${key}, type: ${typeof value}`);
+            hasValidStructure = false;
+            break;
+          }
+        }
+        
+        if (!hasValidStructure) {
+          console.error('[DEBUG] projectStore: Invalid file structure detected, not mounting');
+          return {
+            mountFile: file,
+            isMount: false
+          };
+        }
+        
+        // Lock files that will be modified
         const filenames = Object.keys(parsedFiles);
         const newLockedFiles = new Set(state.lockedFiles);
         filenames.forEach((filename) => newLockedFiles.add(filename));
@@ -358,22 +381,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
           lockedFiles: newLockedFiles,
         };
       } catch (error) {
-        console.error("Error parsing mount file:", error);
+        console.error("[DEBUG] projectStore: Error parsing mount file:", error);
         return {
           mountFile: file,
-          isMount: true,
+          isMount: false, // Don't attempt to mount if we can't parse the file
         };
       }
     });
   },
   
   lockFile: (filename) => set((state) => {
+    console.log(`[DEBUG] projectStore: Locking file ${filename}`);
     const newLockedFiles = new Set(state.lockedFiles);
     newLockedFiles.add(filename);
     return { lockedFiles: newLockedFiles };
   }),
   
   unlockFile: (filename) => set((state) => {
+    console.log(`[DEBUG] projectStore: Unlocking file ${filename}`);
     const newLockedFiles = new Set(state.lockedFiles);
     newLockedFiles.delete(filename);
     return { lockedFiles: newLockedFiles };

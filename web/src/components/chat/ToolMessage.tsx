@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
-import { files as templateFiles } from '@/common/next_template';
 import { Button } from '../ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProjectStore } from "@/store/projectStore";
@@ -15,15 +14,6 @@ import {
   ChatMessage 
 } from '@/types/chat';
 
-type FileTemplate = {
-  [key: string]: {
-    file?: {
-      contents: string;
-    };
-    directory?: Record<string, FileTemplate>;
-  };
-};
-
 type FileContent = {
   file: {
     contents: string;
@@ -36,31 +26,6 @@ type DirectoryContent = {
   };
 };
 
-type TemplateFiles = {
-  [key: string]: FileContent | DirectoryContent;
-};
-
-type NestedDirectory = {
-  src: DirectoryContent & {
-    directory: {
-      components: DirectoryContent & {
-        directory: {
-          ui: DirectoryContent & {
-            directory: {
-              [key: string]: FileContent;
-            };
-          };
-        };
-      };
-      lib: DirectoryContent & {
-        directory: {
-          [key: string]: FileContent;
-        };
-      };
-    };
-  };
-};
-
 interface PreviewFilesProps {
   file: FileDescription;
   isGenerating: boolean;
@@ -69,11 +34,10 @@ interface PreviewFilesProps {
 
 const ToolMessage = ({ message, setSelectedMessage, setActiveFile, userId }: ToolMessageProps) => {
   const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
-  const { addFile, updateMountFile, projectId } = useProjectStore();
+  const { addFile, updateMountFile, projectId, getFile } = useProjectStore();
   const [generating, setGenerating] = useState<boolean>(false);
   const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
-  const [files, setFiles] = useState<FileTemplate>(templateFiles as unknown as FileTemplate);
 
   const appendTerminal = (msg: string) => {
     setTerminalOutput((prev) => [...prev, msg]);
@@ -264,14 +228,8 @@ Please ensure the response is valid JSON.`,
             const requiredComponents = ['button', 'input'];
             for (const comp of requiredComponents) {
               const uiPath = `src/components/ui/${comp}.tsx`;
-              if (!files[uiPath]) {
-                const uiContent = ((templateFiles as unknown as NestedDirectory)
-                  ?.src?.directory?.components?.directory?.ui?.directory?.[`${comp}.tsx`] as FileContent | undefined)?.file?.contents;
-                if (uiContent) {
-                  addFile(uiPath, uiContent);
-                  setFiles(prev => ({ ...prev, [uiPath]: { file: { contents: uiContent } } }));
-                  appendTerminal(`✅ Added UI component: ${comp}\n`);
-                }
+              if (!getFile(uiPath)) {
+                appendTerminal(`⚠️ Required UI component ${comp} not found - will need to be created separately\n`);
               }
             }
           }
@@ -311,13 +269,16 @@ Please ensure the response is valid JSON.`,
           }
 
           // Add utils if needed
-          if (fileContent.includes('@/lib/utils') && !files['lib/utils.ts']) {
-            const utilsContent = ((templateFiles as unknown as NestedDirectory)
-              ?.src?.directory?.lib?.directory?.['utils.ts'] as FileContent | undefined)?.file?.contents;
-            if (utilsContent) {
-              addFile('src/lib/utils.ts', utilsContent);
-              setFiles(prev => ({ ...prev, ['lib/utils.ts']: { file: { contents: utilsContent } } }));
-              appendTerminal(`✅ Added utils library\n`);
+          if (fileContent.includes('@/lib/utils')) {
+            const utilsPath = 'src/lib/utils.ts';
+            if (!getFile(utilsPath)) {
+              appendTerminal(`⚠️ Utils library not found - generating placeholder\n`);
+              const basicUtilsContent = `
+export function cn(...classes: (string | undefined | boolean)[]) {
+  return classes.filter(Boolean).join(' ');
+}
+`.trim();
+              addFile(utilsPath, basicUtilsContent);
             }
           }
 

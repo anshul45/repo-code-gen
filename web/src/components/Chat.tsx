@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { WebContainer } from "@webcontainer/api";
 import { bootWebContainer } from "@/lib/webContainer";
-import { Download } from 'lucide-react';
+import { Download, Bug } from 'lucide-react';
 import { createProjectZip } from '@/lib/zipUtils';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
@@ -15,11 +15,20 @@ import Terminal from './Terminal';
 import { motion } from "framer-motion";
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { PreviewPanel } from './PreviewPanel';
+import { getProjectById } from '@/services/project-api';
 
-export function Chat({ mode = "default", userId }: { mode?: "default" | "landing-page", userId: string }) {
+export function Chat({ mode = "default", userId, projectId }: { mode?: "default" | "landing-page", userId: string, projectId?: string }) {
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">(mode === "landing-page" ? "preview" : "code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
+  const [isLoadingProject, setIsLoadingProject] = useState<boolean>(false);
+  const [projectError, setProjectError] = useState<Error | null>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState<boolean>(false);
+  
+  // Ref to track the loaded project ID to prevent redundant API calls
+  const loadedProjectIdRef = useRef<string | null>(null);
+  
   const projectStore = useProjectStore();
   const landingPageStore = useLandingPageStore();
   
@@ -33,6 +42,152 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);
   const [url,setUrl] = useState<string|null>(null);
   const chatStore = useChatStore();
+
+  // Override console.log to capture debug logs
+  useEffect(() => {
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+
+    console.log = (...args) => {
+      originalConsoleLog(...args);
+      const logMessage = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      
+      if (logMessage.includes('[DEBUG]')) {
+        setDebugLogs(prev => [...prev, `${new Date().toISOString().split('T')[1].split('.')[0]} ${logMessage}`]);
+      }
+    };
+
+    console.error = (...args) => {
+      originalConsoleError(...args);
+      const logMessage = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      
+      setDebugLogs(prev => [...prev, `ERROR ${new Date().toISOString().split('T')[1].split('.')[0]} ${logMessage}`]);
+    };
+
+    console.warn = (...args) => {
+      originalConsoleWarn(...args);
+      const logMessage = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      
+      setDebugLogs(prev => [...prev, `WARN ${new Date().toISOString().split('T')[1].split('.')[0]} ${logMessage}`]);
+    };
+
+    return () => {
+      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
+    };
+  }, []);
+
+  // Load project based on the mode
+  useEffect(() => {
+    // Skip if no projectId or if we've already loaded this project
+    if (!projectId || projectId === loadedProjectIdRef.current) return;
+    
+    const loadProjectData = async () => {
+      setIsLoadingProject(true);
+      setProjectError(null);
+      
+      try {
+        console.log(`[DEBUG] Loading project ${projectId} in ${mode} mode`);
+        const project = await getProjectById(projectId);
+        console.log(`[DEBUG] Project data received:`, 
+          { id: project.id, name: project.name, 
+            codebaseEntries: project.codebase ? Object.keys(project.codebase).length : 0 
+          });
+        
+        // Set the project in chat store
+        chatStore.setProject(project.id, project.name);
+        
+        // Reset the appropriate store based on mode
+        if (mode === "default") {
+          console.log(`[DEBUG] Using projectStore for default mode`);
+          // Reset the project store
+          projectStore.resetFiles();
+          
+          // Load project into project store
+          if (project.codebase) {
+            console.log(`[DEBUG] Loading ${Object.keys(project.codebase).length} files into projectStore`);
+            
+            // Convert object structure to flat file paths with string contents
+            const flattenFiles = (obj: any, basePath: string = ''): Record<string, string> => {
+              const result: Record<string, string> = {};
+              
+              Object.entries(obj).forEach(([key, value]) => {
+                const path = basePath ? `${basePath}/${key}` : key;
+                
+                if (typeof value === 'string') {
+                  // It's a file with string content
+                  result[path] = value;
+                } else if (value && typeof value === 'object') {
+                  if ('contents' in value && typeof value.contents === 'string') {
+                    // It has a contents property with string value
+                    result[path] = value.contents;
+                  } else {
+                    // It's a directory or complex object, recurse
+                    const nestedFiles = flattenFiles(value, path);
+                    Object.assign(result, nestedFiles);
+                  }
+                } else {
+                  console.log(`[DEBUG] Skipping invalid value for path: ${path}, type: ${typeof value}`);
+                }
+              });
+              
+              return result;
+            };
+            
+            // Flatten the nested structure
+            const files = flattenFiles(project.codebase);
+            console.log(`[DEBUG] Flattened ${Object.keys(files).length} files from codebase`);
+            
+            // Process files and add to store
+            Object.entries(files).forEach(([path, content]) => {
+              if (typeof content === 'string') {
+                projectStore.addFile(path, content);
+              } else {
+                console.log(`[DEBUG] Skipping non-string content for path: ${path}, type: ${typeof content}`);
+              }
+            });
+          }
+        } else {
+          console.log(`[DEBUG] Using landingPageStore for landing-page mode`);
+          // For landing page mode
+          if (project.codebase) {
+            console.log(`[DEBUG] Setting mountFile with ${Object.keys(project.codebase).length} files`);
+            landingPageStore.updateMountFile(JSON.stringify(project.codebase));
+          }
+        }
+        
+        // Mark this project as loaded to prevent redundant API calls
+        loadedProjectIdRef.current = projectId;
+      } catch (err) {
+        console.error('[DEBUG] Failed to load project:', err);
+        setProjectError(err as Error);
+      } finally {
+        setIsLoadingProject(false);
+      }
+    };
+    
+    loadProjectData();
+  }, [projectId, mode]);
+
+  // Clean up when component unmounts or when mode changes
+  useEffect(() => {
+    return () => {
+      // Reset the loaded project ID when component unmounts or mode changes
+      loadedProjectIdRef.current = null;
+    };
+  }, [mode]);
+
+  const clearDebugLogs = () => {
+    setDebugLogs([]);
+  };
 
   const appendTerminal = (msg: string) => {
     if (msg.includes("\x1Bc") || msg.includes("\x1B[2J")) {
@@ -60,6 +215,7 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
   useEffect(() => {
     const initialize = async () => {
       if (!webcontainer) {
+        console.log('[DEBUG] Initializing WebContainer with files:', Object.keys(files).length);
         const instance = await bootWebContainer(
           files, 
           setIsLoadingPreview, 
@@ -68,16 +224,18 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
           lockFile, 
           unlockFile,
           (error, role = 'assistant', type = 'error') => {
-            console.log("Adding error to chat:", error, role, type);
+            console.log("[DEBUG] WebContainer error:", error, role, type);
             // Add error message to chat store
             chatStore.addMessage(error, role, type);
             // Also log current messages for debugging
             console.log("Current chat messages:", chatStore.messages);
           }
         );
+        console.log('[DEBUG] WebContainer instance created:', !!instance);
         setWebcontainer(instance);
 
         if (instance) {
+          console.log('[DEBUG] Setting up WebContainer shell');
           const shellProcess = await instance.spawn('jsh', {
             terminal: {
               cols: 80,
@@ -95,7 +253,7 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
           shellRef.current = shellWriter;
 
           instance.fs.watch("/", async (event, filename) => {
-            console.log("File changed:", filename);
+            console.log("[DEBUG] WebContainer file changed:", filename);
           });
         }
       }
@@ -113,7 +271,9 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
   useEffect(() => {
     if (isMount && mountFile) {
       try {
+        console.log('[DEBUG] Mounting files to WebContainer');
         const parsedFiles = JSON.parse(mountFile);
+        console.log('[DEBUG] Parsed files to mount:', Object.keys(parsedFiles).length);
         const filesToMount = { ...parsedFiles };
         
         // Lock files that will be modified
@@ -122,15 +282,19 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
         });
 
         if (Object.keys(filesToMount).length > 0) {
+          console.log('[DEBUG] Calling WebContainer.mount with files');
           webcontainer?.mount(filesToMount).then(() => {
+            console.log('[DEBUG] WebContainer mount completed successfully');
             // Unlock files after mounting is complete
             Object.keys(parsedFiles).forEach(key => {
               unlockFile(key);
             });
+          }).catch(error => {
+            console.error('[DEBUG] WebContainer mount failed:', error);
           });
         }
       } catch (error) {
-        console.error('Error parsing mount file:', error);
+        console.error('[DEBUG] Error parsing mount file:', error);
         // Unlock all files in case of error
         if (typeof mountFile === 'string') {
           try {
@@ -139,12 +303,32 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
               unlockFile(key);
             });
           } catch (e) {
-            console.error('Error unlocking files:', e);
+            console.error('[DEBUG] Error unlocking files:', e);
           }
         }
       }
     }
   }, [isMount, mountFile, lockFile, unlockFile, webcontainer]);
+
+  // Show loading while loading project
+  if (isLoadingProject) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-gray-500">Loading project...</div>
+      </div>
+    );
+  }
+
+  // Show error if project loading failed
+  if (projectError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center flex-col gap-4">
+        <div className="text-red-500">
+          Error loading project: {projectError.message}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full grid grid-cols-12 h-[calc(100vh-29px)] px-4 pt-2 pb-2 gap-4 bg-gray-100 dark:bg-gray-900 min-w-[1000px] overflow-hidden min-h-0">
@@ -211,6 +395,13 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
               {/* Right side: Actions */}
               <div className="flex items-center gap-3">
                 <button
+                  onClick={() => setShowDebugPanel(!showDebugPanel)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                  title="Toggle Debug Panel"
+                >
+                  <Bug className="h-4 w-4" />
+                </button>
+                <button
                   onClick={async () => {
                     try {
                       await createProjectZip(files);
@@ -226,8 +417,30 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
               </div>
             </div>
 
+            {/* Debug Panel */}
+            {showDebugPanel && (
+              <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 max-h-64 overflow-auto">
+                <div className="flex justify-between items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Debug Logs</h3>
+                  <button 
+                    onClick={clearDebugLogs}
+                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="p-2 font-mono text-xs">
+                  {debugLogs.map((log, i) => (
+                    <div key={i} className={`pb-1 ${log.includes('ERROR') ? 'text-red-500' : log.includes('WARN') ? 'text-yellow-500' : ''}`}>
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Code or Preview Section */}
-            <div className="flex-1 overflow-hidden h-full w-full">
+            <div className={`flex-1 overflow-hidden h-full w-full ${showDebugPanel ? 'h-[calc(100%-64px)]' : ''}`}>
               {activeTab === "code" ? (
                 <PanelGroup direction="vertical" className="h-full min-w-0">
                   <Panel defaultSize={80}>

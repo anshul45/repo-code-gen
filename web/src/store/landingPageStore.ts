@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { files } from "@/common/next_template";
 
 interface FileContent {
   contents: string;
@@ -31,7 +30,7 @@ interface LandingPageState {
 }
 
 export const useLandingPageStore = create<LandingPageState>((set) => ({
-  files,
+  files: {},
   fileChanges: null,
   isMount: false,
   mountFile: null,
@@ -39,11 +38,13 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
   lockedFiles: new Set<string>(),
   setActiveFile: (file) => set({ activeFile: file }),
   lockFile: (filename) => set((state) => {
+    console.log(`[DEBUG] landingPageStore: Locking file ${filename}`);
     const newLockedFiles = new Set(state.lockedFiles);
     newLockedFiles.add(filename);
     return { lockedFiles: newLockedFiles };
   }),
   unlockFile: (filename) => set((state) => {
+    console.log(`[DEBUG] landingPageStore: Unlocking file ${filename}`);
     const newLockedFiles = new Set(state.lockedFiles);
     newLockedFiles.delete(filename);
     return { lockedFiles: newLockedFiles };
@@ -51,8 +52,10 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
 
   updateMountFile: (file: string) =>
     set((state) => {
+      console.log('[DEBUG] landingPageStore: updateMountFile called');
       try {
         const parsedFiles = JSON.parse(file);
+        console.log(`[DEBUG] landingPageStore: Parsed mount file with ${Object.keys(parsedFiles).length} files`);
         const filenames = Object.keys(parsedFiles);
         const newLockedFiles = new Set(state.lockedFiles);
         filenames.forEach(filename => newLockedFiles.add(filename));
@@ -63,7 +66,7 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
           lockedFiles: newLockedFiles
         };
       } catch (error) {
-        console.error('Error parsing mount file:', error);
+        console.error('[DEBUG] landingPageStore: Error parsing mount file:', error);
         return {
           mountFile: file,
           isMount: true
@@ -74,9 +77,10 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
   updateFile: (filename: string, content: string) =>
     set((state) => {
       if (state.lockedFiles.has(filename)) {
-        console.warn(`Attempted to modify locked file: ${filename}`);
+        console.warn(`[DEBUG] landingPageStore: Attempted to modify locked file: ${filename}`);
         return state;
       }
+      console.log(`[DEBUG] landingPageStore: Updating file ${filename}`);
       const updatedFiles = JSON.parse(JSON.stringify(state.files));
 
       const updateFileContent = (node: DirectoryNode, pathParts: string[]) => {
@@ -116,10 +120,11 @@ export const useLandingPageStore = create<LandingPageState>((set) => ({
   addFile: (filename, content) =>
     set((state) => {
       if (state.lockedFiles.has(filename)) {
-        console.warn(`Attempted to modify locked file: ${filename}`);
+        console.warn(`[DEBUG] landingPageStore: Attempted to modify locked file: ${filename}`);
         return state;
       }
 
+      console.log(`[DEBUG] landingPageStore: Adding file ${filename}`);
       const updatedFiles = JSON.parse(JSON.stringify(state.files));
       let fileChanged = null;
       let isNewFile = false;

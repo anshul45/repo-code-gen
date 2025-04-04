@@ -6,25 +6,20 @@ import { useSession } from 'next-auth/react';
 import { Chat } from "@/components/Chat";
 import { useChatStore } from "@/store/chat";
 
-export default function MVPPage() {
+export default function MVPPage({ params }: { params: { id: string } }) {
     const router = useRouter();
     const { data: session, status } = useSession();
-    const { projectId, messages } = useChatStore();
+    const { projectId } = useChatStore();
     
     useEffect(() => {
         // If not authenticated, redirect to login
         if (status === 'unauthenticated') {
             router.push('/auth/sign-in');
         }
-        
-        // If authenticated but no project, redirect to home
-        if (status === 'authenticated' && !projectId) {
-            router.push('/');
-        }
-    }, [status, projectId, router]);
+    }, [status, router]);
 
-    // Show loading while checking authentication or redirecting
-    if (status === 'loading' || (status === 'authenticated' && !projectId)) {
+    // Show loading while checking authentication
+    if (status === 'loading') {
         return (
             <div className="w-full h-screen flex items-center justify-center">
                 <div className="text-gray-500">Loading...</div>
@@ -32,11 +27,15 @@ export default function MVPPage() {
         );
     }
 
-    // If we have a session and project, render the chat
+    // If we have a session, render the chat with the ID from the URL
     if (session) {
         return (
             <main className="w-full h-[calc(100vh-100px)]">
-                <Chat mode="default" userId={session?.id || ''} />
+                <Chat 
+                    mode="default" 
+                    userId={session?.id || ''} 
+                    projectId={params.id}
+                />
             </main>
         );
     }
