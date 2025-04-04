@@ -10,6 +10,7 @@ import { ManagerAgent } from '../agents/manager.agent';
 import { CoderAgent } from '../agents/coder.agent';
 import { EditorAgent } from '../agents/editor.agent';
 import { RouterAgent } from '../agents/router.agent';
+import { CodebaseSyncService } from '../project/codebase-sync.service';
 
 enum MessageType {
   JSON = 'json',
@@ -38,6 +39,7 @@ export class ChatController {
     private readonly managerAgent: ManagerAgent,
     private readonly editorAgent: EditorAgent,
     private readonly coderAgent: CoderAgent,
+    private readonly codebaseSyncService: CodebaseSyncService,
   ) {}
 
   @Post()
@@ -106,6 +108,14 @@ export class ChatController {
             // Ignore JSON parse errors for non-JSON content
           }
         }
+      }
+
+      // Sync the codebase with MongoDB after processing the request
+      // Only if a project_id is provided and the agent generated code
+      if (project_id) {
+        // Run this asynchronously to avoid blocking the response
+        this.codebaseSyncService.syncCodebaseToMongoDB(user_id, project_id)
+          .catch(error => console.error('Failed to sync codebase:', error));
       }
 
       return { result };

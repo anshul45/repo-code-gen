@@ -35,8 +35,11 @@ export class ProjectController {
   }
 
   @Get(':id')
-  async getProject(@Param('id') id: string) {
-    return this.projectService.getProject(id);
+  async getProject(
+    @Param('id') id: string, 
+    @Query('userId') userId: string
+  ) {
+    return this.projectService.getProject(id, userId);
   }
 
   @Put(':id')

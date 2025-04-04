@@ -9,9 +9,10 @@ import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description
 import { ConfigModule } from '@nestjs/config';
 import { ImageSearchModule } from '../tools/image-search/image-search.module';
 import { RedisCacheModule } from '../redis/redis.module';
+import { ProjectModule } from '../project/project.module';
 
 @Module({
-  imports: [ConfigModule, ImageSearchModule, RedisCacheModule],
+  imports: [ConfigModule, ImageSearchModule, RedisCacheModule, ProjectModule],
   controllers: [ChatController],
   providers: [
     ChatService,

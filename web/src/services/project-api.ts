@@ -4,6 +4,14 @@ export interface CreateProjectResponse {
   name: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  userId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export async function createProject(initialPrompt: string, userId: string): Promise<CreateProjectResponse> {
   try {
     const response = await fetch(`${NEXT_PUBLIC_API_URL}/projects`, {
@@ -21,6 +29,26 @@ export async function createProject(initialPrompt: string, userId: string): Prom
     return await response.json();
   } catch (error) {
     console.error('Error creating project:', error);
+    throw error;
+  }
+}
+
+export async function getUserProjects(userId: string): Promise<Project[]> {
+  try {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/projects?userId=${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user projects');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user projects:', error);
     throw error;
   }
 } 

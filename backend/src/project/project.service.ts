@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/request.dto';
 import { ProjectResponseDto } from './dto/response.dto';
 import { UpdateProjectDto } from './types/project.types';
+import { CodebaseSyncService } from './codebase-sync.service';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly codebaseSyncService: CodebaseSyncService,
+  ) {}
 
   async createProject(userId: string, data: CreateProjectDto): Promise<ProjectResponseDto> {
     // Generate a project name based on the initial prompt
@@ -40,7 +44,7 @@ export class ProjectService {
       .substring(0, 50); // Limit length
   }
 
-  async getProject(projectId: string) {
+  async getProject(projectId: string, userId: string) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -48,6 +52,10 @@ export class ProjectService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
+
+    // When a project is opened, sync its codebase from MongoDB to the filesystem
+    // This ensures that if there's codebase data in MongoDB, it's available as a markdown file
+    await this.codebaseSyncService.syncCodebaseFromMongoDB(userId, projectId);
 
     return project;
   }
@@ -87,4 +95,17 @@ export class ProjectService {
       where: { id: projectId },
     });
   }
-} 
+
+  async getProjectById(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    return project;
+  }
+
+}

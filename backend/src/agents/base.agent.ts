@@ -121,13 +121,17 @@ export class BaseAgent {
 
     this.thread = [{ role: 'system', content: this.instructions }];
     this.overallThread = [{ role: 'system', content: this.instructions }];
+    
+    console.log(`[BaseAgent] Initialized ${this.name} agent with sessionId ${this.sessionId || 'none'}`);
+    console.log(`[BaseAgent] Using model: ${this.model}, client: ${this.clientType}`);
+    console.log(`[BaseAgent] Tools registered: ${this.tools.map(t => t.name).join(', ') || 'none'}`);
   }
 
   protected executeToolCall(toolCall: ToolCall): any {
     const name = toolCall.function.name;
     const args = JSON.parse(toolCall.function.arguments);
 
-    console.log(`Assistant: ${name}(${JSON.stringify(args)})`);
+    console.log(`[BaseAgent] Executing tool: ${name}(${JSON.stringify(args)})`);
     return this.toolsMap[name](...Object.values(args));
   }
 
@@ -195,6 +199,7 @@ export class BaseAgent {
   }
 
   robustJSONParse(input: string): any {
+    console.log(`[BaseAgent:${this.name}] Attempting to parse JSON response`);
     try {
       const clean = input.replace(/^[^{[]*/, '').replace(/[^}\]]*$/, '');
       const cleanJSON = clean
@@ -204,13 +209,15 @@ export class BaseAgent {
         .replace('```', '')
         .replace('typescript', '');
 
+      console.log(`[BaseAgent:${this.name}] Cleaned JSON for parsing:\n${cleanJSON.substring(0, 500)}${cleanJSON.length > 500 ? '...(truncated)' : ''}`);
+
       const repaired = jsonrepair(cleanJSON);
 
       return parse(repaired);
     } catch (e) {
       // Final fallback: Manual inspection
-      console.error('JSON parse failed after repairs:');
-      console.error(input);
+      console.error(`[BaseAgent:${this.name}] JSON parse failed after repairs:`, e);
+      console.error(`[BaseAgent:${this.name}] Input that failed to parse:\n${input.substring(0, 500)}${input.length > 500 ? '...(truncated)' : ''}`);
       throw e;
     }
   }
@@ -221,6 +228,9 @@ export class BaseAgent {
     maxToolCalls = 1,
   ): Promise<Message[]> {
     try {
+      console.log(`\n[BaseAgent:${this.name}] Running with query: "${query.substring(0, 100)}${query.length > 100 ? '...(truncated)' : ''}"`);
+      console.log(`[BaseAgent:${this.name}] Session ID: ${this.sessionId}, Response format: ${responseFormat || 'default'}, Max tool calls: ${maxToolCalls}`);
+      
       this.thread = (await this.redisCacheService.get<Message[]>(
         `${this.name}${this.sessionId}`,
       )) || [{ role: 'system', content: this.instructions }];
@@ -229,12 +239,19 @@ export class BaseAgent {
         `conversation:${this.sessionId}`,
       )) || [{ role: 'system', content: this.instructions }];
 
+      console.log(`[BaseAgent:${this.name}] Retrieved thread from Redis: ${this.thread.length} messages, ${this.overallThread.length} messages in overall thread`);
+
       this.thread.push({ role: 'user', content: query });
       this.overallThread.push({ role: 'user', content: query });
 
       if (!this.tools.length) {
+        console.log(`[BaseAgent:${this.name}] Running without tools using ${this.clientType} client`);
+        
         if (this.clientType === 'anthropic') {
           const anthropicClient = this.client as Anthropic;
+          console.log(`[BaseAgent:${this.name}] Sending request to Anthropic with model ${this.model}`);
+          console.log(`[BaseAgent:${this.name}] System instructions length: ${this.instructions.length} characters`);
+          
           const response = await anthropicClient.messages.create({
             model: this.model,
             max_tokens: 20000,
@@ -247,9 +264,16 @@ export class BaseAgent {
             system: this.instructions,
           });
 
+          console.log(`[BaseAgent:${this.name}] Received response from Anthropic`);
+          
           const message = (response.content[0] as any).text;
+          console.log(`[BaseAgent:${this.name}] Raw message from Anthropic:\n${message.substring(0, 500)}${message.length > 500 ? '...(truncated)' : ''}`);
+          
+          console.log(`[BaseAgent:${this.name}] Parsing response as JSON`);
           const cleanResponse = this.robustJSONParse(message);
-
+          console.log(`[BaseAgent:${this.name}] Successfully parsed JSON response. Keys: ${Object.keys(cleanResponse).join(', ')}`);
+          
+          console.log(`[BaseAgent:${this.name}] Storing generated code in filesystem`);
           this.storeGeneratedCode(cleanResponse);
 
           const assistantMessage: Message = {
@@ -262,11 +286,14 @@ export class BaseAgent {
 
           this.thread.push(assistantMessage);
           this.overallThread.push(assistantMessage);
+          console.log(`[BaseAgent:${this.name}] Added assistant message to thread and saving to Redis`);
           await this.saveThread();
 
           return this.overallThread;
         } else {
           const openaiClient = this.client as OpenAI;
+          console.log(`[BaseAgent:${this.name}] Sending request to OpenAI with model ${this.model}`);
+          
           const response = await openaiClient.chat.completions.create({
             model: this.model,
             messages: this.thread as any,
@@ -275,7 +302,11 @@ export class BaseAgent {
               responseFormat === 'json' ? { type: 'json_object' } : undefined,
           });
 
+          console.log(`[BaseAgent:${this.name}] Received response from OpenAI`);
+          
           const message = response.choices[0].message.content;
+          console.log(`[BaseAgent:${this.name}] Message from OpenAI:\n${message?.substring(0, 500)}${message && message.length > 500 ? '...(truncated)' : ''}`);
+          
           const assistantMessage: Message = {
             role: 'assistant',
             content: message,
@@ -284,17 +315,24 @@ export class BaseAgent {
 
           this.thread.push(assistantMessage);
           this.overallThread.push(assistantMessage);
+          console.log(`[BaseAgent:${this.name}] Added assistant message to thread and saving to Redis`);
           await this.saveThread();
 
           return this.overallThread;
         }
       }
 
+      console.log(`[BaseAgent:${this.name}] Running with tools using OpenAI client`);
       const toolSchemas = this.toolsToToolSchema();
       let toolCallCount = 0;
 
       while (toolCallCount < maxToolCalls) {
+        console.log(`[BaseAgent:${this.name}] Tool call iteration ${toolCallCount + 1}/${maxToolCalls}`);
+        
         const openaiClient = this.client as OpenAI;
+        console.log(`[BaseAgent:${this.name}] Sending request to OpenAI with model ${this.model}`);
+        console.log(`[BaseAgent:${this.name}] Current thread length: ${this.thread.length} messages`);
+        
         const response = await openaiClient.chat.completions.create({
           model: this.model,
           messages: this.thread.map(this.convertToOpenAIMessage),
@@ -304,7 +342,18 @@ export class BaseAgent {
             responseFormat === 'json' ? { type: 'json_object' } : undefined,
         });
 
+        console.log(`[BaseAgent:${this.name}] Received response from OpenAI`);
+        
         const message = response.choices[0].message;
+        console.log(`[BaseAgent:${this.name}] Message content from OpenAI:\n${message.content?.substring(0, 500)}${message.content && message.content.length > 500 ? '...(truncated)' : 'null'}`);
+        
+        if (message.tool_calls) {
+          console.log(`[BaseAgent:${this.name}] OpenAI requested ${message.tool_calls.length} tool calls`);
+          message.tool_calls.forEach((call, i) => {
+            console.log(`[BaseAgent:${this.name}] Tool call ${i+1}: ${call.function.name}`);
+          });
+        }
+        
         const assistantMessage: Message = {
           role: 'assistant',
           content: message.content,
@@ -325,8 +374,10 @@ export class BaseAgent {
 
         this.thread.push(assistantMessage);
         this.overallThread.push(assistantMessage);
+        console.log(`[BaseAgent:${this.name}] Added assistant message to thread`);
 
         if (!message.tool_calls) {
+          console.log(`[BaseAgent:${this.name}] No tool calls requested, breaking out of tool call loop`);
           break;
         }
 
@@ -335,18 +386,25 @@ export class BaseAgent {
         for (const toolCall of message.tool_calls) {
           if (toolCall.function.name in this.toolsMap) {
             try {
-              console.log('calling tool: ', toolCall.function);
+              console.log(`[BaseAgent:${this.name}] Executing tool: ${toolCall.function.name} with args:`, toolCall.function.arguments);
               const result = await this.executeToolCall(toolCall);
-
+              console.log(`[BaseAgent:${this.name}] Tool execution successful`);
+              
+              const resultString = JSON.stringify(result);
+              console.log(`[BaseAgent:${this.name}] Tool result:\n${resultString.substring(0, 500)}${resultString.length > 500 ? '...(truncated)' : ''}`);
+              
+              const responseType = this.getToolResponseType(toolCall.function.name);
+              console.log(`[BaseAgent:${this.name}] Tool response type: ${responseType}`);
+              
               toolResponses.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
                 content: result ? JSON.stringify(result) : '{}',
-                type: this.getToolResponseType(toolCall.function.name),
+                type: responseType,
                 agent_name: this.name,
               });
             } catch (error) {
-              console.error(`Tool execution error: ${error}`);
+              console.error(`[BaseAgent:${this.name}] Tool execution error:`, error);
               toolResponses.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
@@ -356,21 +414,23 @@ export class BaseAgent {
               });
             }
           } else {
-            console.warn(`Warning: Tool ${toolCall.function.name} not found!`);
+            console.warn(`[BaseAgent:${this.name}] Warning: Tool ${toolCall.function.name} not found!`);
           }
         }
         
         // Add all tool responses at once after processing all tool calls
+        console.log(`[BaseAgent:${this.name}] Adding ${toolResponses.length} tool responses to thread`);
         this.thread.push(...toolResponses);
         this.overallThread.push(...toolResponses);
         
         toolCallCount++;
       }
 
+      console.log(`[BaseAgent:${this.name}] Completed run, saving thread to Redis`);
       await this.saveThread();
       return this.overallThread;
     } catch (error) {
-      console.error('Exception occurred:', error);
+      console.error(`[BaseAgent:${this.name}] Exception occurred:`, error);
       throw error;
     }
   }
@@ -395,6 +455,9 @@ export class BaseAgent {
     response: Record<string, FileStructure>,
   ): Promise<void> {
     try {
+      console.log(`[BaseAgent:${this.name}] Storing generated code for session ${this.sessionId}`);
+      console.log(`[BaseAgent:${this.name}] Response keys: ${Object.keys(response).join(', ')}`);
+      
       const extractedFiles: { path: string; content: string }[] = [];
 
       const extractFiles = (
@@ -406,11 +469,13 @@ export class BaseAgent {
             if ('file' in value && value.file) {
               // Ensure key includes file extension
               const fullPath = key.includes('.') ? key : `${key}.ts`;
+              console.log(`[BaseAgent:${this.name}] Extracted file: ${currentPath}${fullPath}`);
               extractedFiles.push({
                 path: `${currentPath}${fullPath}`,
                 content: value.file.contents,
               });
             } else if ('directory' in value) {
+              console.log(`[BaseAgent:${this.name}] Processing directory: ${currentPath}${key}/`);
               extractFiles(value.directory, `${currentPath}${key}/`);
             } else {
               extractFiles(
@@ -423,6 +488,8 @@ export class BaseAgent {
       };
 
       extractFiles(response);
+      console.log(`[BaseAgent:${this.name}] Extracted ${extractedFiles.length} files from response`);
+      
       // Create markdown content
       const markdownContent = extractedFiles
         .map((file) => `## ${file.path}\n${file.content}\n\`\`\``)
@@ -432,13 +499,19 @@ export class BaseAgent {
       const timestamp = new Date().toISOString();
       const newContent = `\n\n# Generated Code - ${timestamp}\n\n${markdownContent}`;
 
+      console.log(`[BaseAgent:${this.name}] Writing to file: ${filePath}`);
+      
       if (!(await this.fileExists(filePath))) {
+        console.log(`[BaseAgent:${this.name}] Creating new file: ${filePath}`);
         await this.addFile(filePath, newContent.trim());
       } else {
+        console.log(`[BaseAgent:${this.name}] Appending to existing file: ${filePath}`);
         await this.appendToFile(filePath, newContent);
       }
+      
+      console.log(`[BaseAgent:${this.name}] Successfully stored generated code`);
     } catch (error) {
-      console.error('Error storing generated code:', error);
+      console.error(`[BaseAgent:${this.name}] Error storing generated code:`, error);
       throw error;
     }
   }
@@ -455,9 +528,9 @@ export class BaseAgent {
   protected async addFile(path: string, content: string): Promise<void> {
     try {
       await writeFile(path, content, 'utf8');
-      console.log(`Successfully created file: ${path}`);
+      console.log(`[BaseAgent:${this.name}] Successfully created file: ${path}`);
     } catch (error) {
-      console.error(`Error creating file ${path}:`, error);
+      console.error(`[BaseAgent:${this.name}] Error creating file ${path}:`, error);
       throw error;
     }
   }
@@ -465,16 +538,19 @@ export class BaseAgent {
   protected async appendToFile(path: string, content: string): Promise<void> {
     try {
       await appendFile(path, content, 'utf8');
-      console.log(`Successfully appended to file: ${path}`);
-      console.log(`Successfully wrote to file: ${path}`);
+      console.log(`[BaseAgent:${this.name}] Successfully appended to file: ${path}`);
+      console.log(`[BaseAgent:${this.name}] Successfully wrote to file: ${path}`);
     } catch (error) {
-      console.error(`Error writing to file ${path}:`, error);
+      console.error(`[BaseAgent:${this.name}] Error writing to file ${path}:`, error);
       throw error;
     }
   }
 
   protected async saveThread(): Promise<void> {
     if (this.sessionId) {
+      console.log(`[BaseAgent:${this.name}] Saving thread to Redis for session ${this.sessionId}`);
+      console.log(`[BaseAgent:${this.name}] Thread length: ${this.thread.length}, Overall thread length: ${this.overallThread.length}`);
+      
       await this.redisCacheService.set(
         `${this.name}${this.sessionId}`,
         this.thread,
@@ -483,6 +559,10 @@ export class BaseAgent {
         `conversation:${this.sessionId}`,
         this.overallThread,
       );
+      
+      console.log(`[BaseAgent:${this.name}] Thread saved successfully`);
+    } else {
+      console.log(`[BaseAgent:${this.name}] No sessionId provided, skipping thread save`);
     }
   }
 }
