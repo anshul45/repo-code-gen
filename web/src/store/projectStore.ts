@@ -57,6 +57,7 @@ interface ProjectState {
   addFile: (filename: string, content: string) => void;
   deleteFile: (path: string) => void;
   resetFiles: () => void;
+  getFile: (path: string) => string | null;
 
   // Compatibility methods
   setActiveFile: (
@@ -399,4 +400,42 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       newLockedFiles.delete(filename);
       return { lockedFiles: newLockedFiles };
     }),
+
+  // Get file content from path
+  getFile: (path: string) => {
+    const state = get();
+    console.log(`[DEBUG] projectStore: Getting file ${path}`);
+    
+    try {
+      const pathParts = path.split("/");
+      let current = state.files;
+      
+      // Navigate through the path
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        const part = pathParts[i];
+        if (!part) continue;
+        
+        if (!current[part] || !current[part].directory) {
+          console.log(`[DEBUG] projectStore: Directory ${part} not found`);
+          return null;
+        }
+        
+        current = current[part].directory as unknown as DirectoryNode;
+      }
+      
+      // Get the file
+      const filename = pathParts[pathParts.length - 1];
+      if (current[filename]?.file) {
+        return current[filename].file.contents;
+      } else if (current[filename]?.contents) {
+        return current[filename].contents as string;
+      }
+      
+      console.log(`[DEBUG] projectStore: File ${filename} not found`);
+      return null;
+    } catch (error) {
+      console.error(`[DEBUG] projectStore: Error getting file ${path}:`, error);
+      return null;
+    }
+  },
 }));
