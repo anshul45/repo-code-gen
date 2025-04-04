@@ -32,10 +32,10 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
   const projectStore = useProjectStore();
   const landingPageStore = useLandingPageStore();
   
-  // Use legacyFiles from projectStore for compatibility with bootWebContainer
+  // Use files directly from projectStore since we're now using DirectoryNode structure
   const store = mode === "landing-page" ? landingPageStore : projectStore;
   const { fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = store;
-  const files = mode === "landing-page" ? landingPageStore.files : projectStore.legacyFiles;
+  const files = mode === "landing-page" ? landingPageStore.files : projectStore.files;
   
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [command, setCommand] = useState("");
@@ -126,16 +126,30 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
                   // It's a file with string content
                   result[path] = value;
                 } else if (value && typeof value === 'object') {
-                  if ('contents' in value && typeof value.contents === 'string') {
-                    // It has a contents property with string value
-                    result[path] = value.contents;
-                  } else {
-                    // It's a directory or complex object, recurse
-                    const nestedFiles = flattenFiles(value, path);
-                    Object.assign(result, nestedFiles);
+                  // Handle directory field - extract its contents but ignore the field itself
+                  if ('directory' in value && typeof value.directory === 'object') {
+                    // Recursively process directory contents
+                    const dirContents = flattenFiles(value.directory, path);
+                    Object.assign(result, dirContents);
+                    return;
                   }
-                } else {
-                  console.log(`[DEBUG] Skipping invalid value for path: ${path}, type: ${typeof value}`);
+                  
+                  // Handle file with contents field
+                  if ('file' in value && value.file && typeof value.file === 'object' && 
+                      'contents' in value.file && typeof value.file.contents === 'string') {
+                    result[path] = value.file.contents;
+                    return;
+                  }
+                  
+                  // Handle direct contents field
+                  if ('contents' in value && typeof value.contents === 'string') {
+                    result[path] = value.contents;
+                    return;
+                  }
+                  
+                  // It's a regular object (nested structure), recurse into it
+                  const nestedFiles = flattenFiles(value, path);
+                  Object.assign(result, nestedFiles);
                 }
               });
               
@@ -235,6 +249,47 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
         setWebcontainer(instance);
 
         if (instance) {
+          // Check if package.json exists and is accessible
+          try {
+            const rootFiles = await instance.fs.readdir('/');
+            console.log('[DEBUG] Root files after initialization:', rootFiles);
+            
+            if (rootFiles.includes('package.json')) {
+              const packageJsonContent = await instance.fs.readFile('/package.json', 'utf-8');
+              console.log('[DEBUG] Found package.json content:', packageJsonContent.substring(0, 100) + '...');
+            } else {
+              console.warn('[DEBUG] package.json not found in root directory');
+              
+              // Create package.json manually if not found
+              const defaultPackageJson = {
+                name: "nextjs-project",
+                version: "0.1.0",
+                private: true,
+                scripts: {
+                  dev: "next dev",
+                  build: "next build",
+                  start: "next start",
+                  lint: "next lint"
+                },
+                dependencies: {
+                  "next": "^13.5.1",
+                  "react": "^18.2.0",
+                  "react-dom": "^18.2.0"
+                }
+              };
+              
+              // Write the package.json to the root directory
+              await instance.fs.writeFile('/package.json', JSON.stringify(defaultPackageJson, null, 2));
+              console.log('[DEBUG] Created default package.json');
+              
+              // Verify it was created
+              const filesAfterCreate = await instance.fs.readdir('/');
+              console.log('[DEBUG] Files after creating package.json:', filesAfterCreate);
+            }
+          } catch (e) {
+            console.error('[DEBUG] Error checking/creating package.json:', e);
+          }
+
           console.log('[DEBUG] Setting up WebContainer shell');
           const shellProcess = await instance.spawn('jsh', {
             terminal: {
@@ -252,9 +307,50 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
           const shellWriter = shellProcess.input.getWriter();
           shellRef.current = shellWriter;
 
-          instance.fs.watch("/", async (event, filename) => {
+          instance.fs.watch("/", (eventType, filename) => {
             console.log("[DEBUG] WebContainer file changed:", filename);
           });
+          
+          // Run commands to check environment
+          try {
+            // Check current directory and files
+            appendTerminal("📁 Checking environment...\n");
+            const pwdProcess = await instance.spawn('pwd');
+            await pwdProcess.exit;
+            
+            const lsProcess = await instance.spawn('ls', ['-la']);
+            await lsProcess.exit;
+            
+            // Create a startup script
+            const startupScript = `
+              echo "🔍 Checking for package.json..."
+              if [ -f "./package.json" ]; then
+                echo "✅ package.json found in current directory"
+                cat package.json | head -n 10
+              else
+                echo "❌ package.json not found in current directory"
+                echo "Checking other locations..."
+                ls -la /
+                if [ -f "/package.json" ]; then
+                  echo "✅ package.json found in root directory"
+                  cat /package.json | head -n 10
+                  cp /package.json ./package.json
+                  echo "📋 Copied package.json to current directory"
+                fi
+              fi
+            `;
+            
+            await instance.fs.writeFile('/startup.sh', startupScript);
+            await instance.spawn('chmod', ['+x', '/startup.sh']);
+            
+            // Run the startup script
+            appendTerminal("🚀 Running startup checks...\n");
+            const startupProcess = await instance.spawn('/startup.sh');
+            await startupProcess.exit;
+          } catch (e) {
+            console.error('[DEBUG] Error running initial commands:', e);
+            appendTerminal(`❌ Error during initialization: ${e}\n`);
+          }
         }
       }
     };
@@ -274,25 +370,115 @@ export function Chat({ mode = "default", userId, projectId }: { mode?: "default"
         console.log('[DEBUG] Mounting files to WebContainer');
         const parsedFiles = JSON.parse(mountFile);
         console.log('[DEBUG] Parsed files to mount:', Object.keys(parsedFiles).length);
-        const filesToMount = { ...parsedFiles };
         
-        // Lock files that will be modified
-        Object.keys(parsedFiles).forEach(key => {
-          lockFile(key);
-        });
-
-        if (Object.keys(filesToMount).length > 0) {
-          console.log('[DEBUG] Calling WebContainer.mount with files');
-          webcontainer?.mount(filesToMount).then(() => {
-            console.log('[DEBUG] WebContainer mount completed successfully');
-            // Unlock files after mounting is complete
-            Object.keys(parsedFiles).forEach(key => {
-              unlockFile(key);
-            });
-          }).catch(error => {
-            console.error('[DEBUG] WebContainer mount failed:', error);
+        // Special handling to ensure package.json is mounted correctly
+        const processMount = async () => {
+          if (webcontainer) {
+            console.log('[DEBUG] Checking for package.json in codebase...');
+            
+            // Function to find package.json in nested structure
+            const findPackageJson = (obj: any, path: string = ''): {content: string, path: string} | null => {
+              for (const [key, value] of Object.entries(obj)) {
+                const currentPath = path ? `${path}/${key}` : key;
+                
+                // Direct match for package.json
+                if (key === 'package.json' && typeof value === 'string') {
+                  return { content: value, path: currentPath };
+                }
+                
+                // Check for package.json in file.contents format
+                if (key === 'package.json' && value && typeof value === 'object' && 
+                    'file' in value && value.file && typeof value.file === 'object' &&
+                    'contents' in value.file && typeof value.file.contents === 'string') {
+                  return { content: value.file.contents, path: currentPath };
+                }
+                
+                // Check for package.json in contents format
+                if (key === 'package.json' && value && typeof value === 'object' && 
+                    'contents' in value && typeof value.contents === 'string') {
+                  return { content: value.contents, path: currentPath };
+                }
+                
+                // Recursively check in nested objects
+                if (value && typeof value === 'object') {
+                  // Check in directory property
+                  if ('directory' in value && typeof value.directory === 'object') {
+                    const found = findPackageJson(value.directory, currentPath);
+                    if (found) return found;
+                  }
+                  
+                  // If not a special structure, check the object directly
+                  if (!('file' in value) && !('contents' in value) && !('directory' in value)) {
+                    const found = findPackageJson(value, currentPath);
+                    if (found) return found;
+                  }
+                }
+              }
+              
+              return null;
+            };
+            
+            // Find package.json in the codebase
+            const packageJson = findPackageJson(parsedFiles);
+            
+            if (packageJson) {
+              console.log(`[DEBUG] Found package.json at path: ${packageJson.path}`);
+              
+              // Write package.json to the root directory first
+              await webcontainer.fs.writeFile('/package.json', packageJson.content);
+              console.log('[DEBUG] Written package.json to root directory');
+              
+              // Check if it was written correctly
+              try {
+                const content = await webcontainer.fs.readFile('/package.json', 'utf-8');
+                console.log('[DEBUG] Verified package.json content:', content.substring(0, 100) + '...');
+              } catch (e) {
+                console.error('[DEBUG] Failed to verify package.json:', e);
+              }
+            } else {
+              console.warn('[DEBUG] No package.json found in codebase');
+            }
+          }
+          
+          const filesToMount = { ...parsedFiles };
+          
+          // Lock files that will be modified
+          Object.keys(parsedFiles).forEach(key => {
+            lockFile(key);
           });
-        }
+
+          if (Object.keys(filesToMount).length > 0 && webcontainer) {
+            console.log('[DEBUG] Calling WebContainer.mount with files');
+            try {
+              await webcontainer.mount(filesToMount);
+              console.log('[DEBUG] WebContainer mount completed successfully');
+              
+              // Verify the mount by listing files
+              try {
+                const files = await webcontainer.fs.readdir('/');
+                console.log('[DEBUG] Files in root directory after mount:', files);
+              } catch (e) {
+                console.error('[DEBUG] Error reading root directory:', e);
+              }
+              
+              // Unlock files after mounting is complete
+              Object.keys(parsedFiles).forEach(key => {
+                unlockFile(key);
+              });
+            } catch (error) {
+              console.error('[DEBUG] WebContainer mount failed:', error);
+              // Unlock files in case of error
+              Object.keys(parsedFiles).forEach(key => {
+                unlockFile(key);
+              });
+            }
+          }
+        };
+        
+        // Call the async function
+        processMount().catch(error => {
+          console.error('[DEBUG] Error in processMount:', error);
+        });
       } catch (error) {
         console.error('[DEBUG] Error parsing mount file:', error);
         // Unlock all files in case of error
