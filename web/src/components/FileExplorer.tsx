@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
-import { useFileStore } from '@/store/fileStore';
+import { useProjectStore } from '@/store/projectStore';
 import { ChevronDown, ChevronRight, Download, FolderTree, SquareDashedBottomCode, Lock } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 
@@ -152,7 +152,7 @@ const FileNode = ({ node, path = "", level = 0, activeFilePath, setActiveFile, f
 };
 
 const FileExplorer = ({ setActiveFile }: any) => {
-  const { files, fileChanges, isMount, activeFile, lockedFiles } = useFileStore();
+  const { legacyFiles: files, fileChanges, isMount, activeFile, lockedFiles } = useProjectStore();
   const [activeFilePath, setActiveFilePath] = useState(activeFile?.path || "");
 
   useEffect(() => {

@@ -20,6 +20,7 @@ interface ChatState {
   setIsStreaming: (isStreaming: boolean) => void;
   sendMessage: (content: string, userId: string) => Promise<void>;
   setProject: (projectId: string, projectName: string) => void;
+  resetMessages: () => void;
 }
 
 type SetState = StoreApi<ChatState>['setState'];
@@ -87,5 +88,9 @@ export const useChatStore = create<ChatState>((set: SetState, get: GetState) => 
     } finally {
       setIsStreaming(false);
     }
+  },
+
+  resetMessages: () => {
+    set({ messages: [] });
   },
 }));

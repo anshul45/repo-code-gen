@@ -8,7 +8,7 @@ import { createProjectZip } from '@/lib/zipUtils';
 import FileExplorer from './FileExplorer';
 import CodeEditor from './CodeEditor';
 import ChatPreview from './ChatPreview';
-import { useFileStore } from '@/store/fileStore';
+import { useProjectStore } from '@/store/projectStore';
 import { useLandingPageStore } from '@/store/landingPageStore';
 import { useChatStore } from '@/store/chat';
 import Terminal from './Terminal';
@@ -20,10 +20,14 @@ export function Chat({ mode = "default", userId }: { mode?: "default" | "landing
   const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
   const [activeTab, setActiveTab] = useState<"code" | "preview">(mode === "landing-page" ? "preview" : "code");
   const [isLoadingPreview, setIsLoadingPreview] = useState<boolean>(true);
-  const fileStore = useFileStore();
+  const projectStore = useProjectStore();
   const landingPageStore = useLandingPageStore();
-  const { files, fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = 
-    mode === "landing-page" ? landingPageStore : fileStore;
+  
+  // Use legacyFiles from projectStore for compatibility with bootWebContainer
+  const store = mode === "landing-page" ? landingPageStore : projectStore;
+  const { fileChanges, isMount, mountFile, setActiveFile, lockFile, unlockFile } = store;
+  const files = mode === "landing-page" ? landingPageStore.files : projectStore.legacyFiles;
+  
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [command, setCommand] = useState("");
   const shellRef = useRef<WritableStreamDefaultWriter<string> | null>(null);

@@ -183,19 +183,19 @@ export function AppSidebar({
                   <SidebarMenuButton
                     tooltip={project.name}
                     asChild
-                    isActive={pathname === `/project/${project.id}`}
+                    isActive={pathname === `/build/create?projectId=${project.id}`}
                     className={cn(
                       "my-1 transition-all duration-200",
-                      pathname === `/project/${project.id}`
+                      pathname === `/build/create?projectId=${project.id}`
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-muted/80"
                     )}
                   >
-                    <Link href={`/project/${project.id}`} className="flex items-center gap-3">
+                    <Link href={`/build/create?projectId=${project.id}`} className="flex items-center gap-3">
                       <div
                         className={cn(
                           "flex h-5 w-5 items-center justify-center",
-                          pathname === `/project/${project.id}`
+                          pathname === `/build/create?projectId=${project.id}`
                             ? "text-primary"
                             : "text-muted-foreground"
                         )}

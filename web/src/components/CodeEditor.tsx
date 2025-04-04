@@ -3,16 +3,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import type { editor } from 'monaco-editor';
-import { useFileStore } from "@/store/fileStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useCallback } from "react";
 
 
 
 const CodeEditor = () => {
-
-   const { setActiveFile, activeFile } = useFileStore();
-  const { updateFile } = useFileStore();
+  const projectStore = useProjectStore();
+  const { setActiveFile, activeFile, updateFile } = projectStore;
   const [isSaving, setIsSaving] = useState(false);
   const { open } = useSidebar();
   const [displayContent, setDisplayContent] = useState<string>("");

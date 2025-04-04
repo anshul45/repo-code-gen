@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { createProject } from "@/services/project-api";
 import { useChatStore } from "@/store/chat";
-import { useFileStore } from "@/store/fileStore";
+import { useProjectStore } from "@/store/projectStore";
 
 export default function HomePage() {
     const router = useRouter();
@@ -30,7 +30,7 @@ export default function HomePage() {
     
     // Access store functions
     const { addMessage, setProject: setChatProject } = useChatStore();
-    const { setProject: setFileProject } = useFileStore();
+    const { setProject: setFileProject } = useProjectStore();
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -48,7 +48,6 @@ export default function HomePage() {
             if (!userId) {
                 throw new Error("User ID not available. Please try logging in again.");
             }
-            
             console.log('Using userId:', userId);
             
             // Send the initial prompt to the backend
@@ -63,9 +62,9 @@ export default function HomePage() {
             
             // Redirect based on selection
             if (projectType === 'landing-page') {
-                router.push('/build/create');
+                router.push(`/build/create/${projectData.id}`);
             } else {
-                router.push('/build/mvp');
+                router.push(`/build/mvp/${projectData.id}`);
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to create project. Please try again.");

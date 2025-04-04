@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { files as templateFiles } from '@/common/next_template';
 import { Button } from '../ui/button';
 import { Checkbox } from "@/components/ui/checkbox";
-import { useFileStore } from "@/store/fileStore";
+import { useProjectStore } from "@/store/projectStore";
 import { Loader2 } from 'lucide-react';
 import { 
   FileDescription, 
@@ -69,7 +69,7 @@ interface PreviewFilesProps {
 
 const ToolMessage = ({ message, setSelectedMessage, setActiveFile, userId }: ToolMessageProps) => {
   const [currentGeneratingFile, setCurrentGeneratingFile] = useState<string | null>(null);
-  const { addFile, updateMountFile, projectId } = useFileStore();
+  const { addFile, updateMountFile, projectId } = useProjectStore();
   const [generating, setGenerating] = useState<boolean>(false);
   const [generatedFiles, setGeneratedFiles] = useState<{ [key: string]: boolean }>({});
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
