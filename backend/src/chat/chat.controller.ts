@@ -10,6 +10,7 @@ import { ManagerAgent } from '../agents/manager.agent';
 import { CoderAgent } from '../agents/coder.agent';
 import { EditorAgent } from '../agents/editor.agent';
 import { RouterAgent } from '../agents/router.agent';
+import { CodebaseSyncService } from '../project/codebase-sync.service';
 
 enum MessageType {
   JSON = 'json',
@@ -38,6 +39,7 @@ export class ChatController {
     private readonly managerAgent: ManagerAgent,
     private readonly editorAgent: EditorAgent,
     private readonly coderAgent: CoderAgent,
+    private readonly codebaseSyncService: CodebaseSyncService,
   ) {}
 
   @Post()

@@ -5,6 +5,7 @@ import { BaseAgent, Tool, Message } from './base.agent';
 import { GetFilesWithDescriptionTool } from '../tools/get-files-with-description.tool';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class EditorAgent {
@@ -14,6 +15,7 @@ export class EditorAgent {
     private readonly configService: ConfigService,
     private readonly redisCacheService: RedisCacheService,
     private readonly getFilesWithDescriptionTool: GetFilesWithDescriptionTool,
+    private readonly prismaService: PrismaService,
   ) {
     this.activeSessions = new Map();
   }
@@ -63,6 +65,7 @@ export class EditorAgent {
         'gemini',
         this.configService.get('GEMINI_BASE_URL'),
         this.configService.get('GEMINI_API_KEY'),
+        this.prismaService,
       );
 
       this.activeSessions.set(sessionKey, agent);

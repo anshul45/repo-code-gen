@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type * as React from "react";
 import {
   Code,
@@ -7,6 +8,9 @@ import {
   LayoutDashboardIcon,
   ListIcon,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Folder,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +18,8 @@ import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { getUserProjects, Project } from "@/services/project-api";
 
 import {
   Sidebar,
@@ -34,8 +40,10 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const navMain = [
     {
@@ -49,6 +57,33 @@ export function AppSidebar({
       icon: LayoutIcon,
     },
   ];
+
+  // Fetch user projects
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (session?.user) {
+        try {
+          // Using email as identifier since id property doesn't exist in the session user
+          const userId = session.id;
+          if (userId) {
+            setIsLoading(true);
+            const projectsData = await getUserProjects(userId);
+            setProjects(projectsData);
+          }
+        } catch (error) {
+          console.error("Failed to fetch projects:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    if (session?.user) {
+      fetchProjects();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session?.user]);
 
   return (
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
@@ -73,6 +108,21 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarSeparator />
+
+      {/* Sidebar collapse toggle button */}
+      <div className="px-3 py-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full justify-between" 
+          onClick={toggleSidebar}
+        >
+          <span className={cn(!isCollapsed ? "block" : "hidden")}>
+            Collapse Sidebar
+          </span>
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+      </div>
 
       <SidebarContent className="pt-2">
         <SidebarMenu>
@@ -106,6 +156,67 @@ export function AppSidebar({
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+
+        {/* User Projects Section */}
+        <div className="mt-4">
+          <div className={cn("px-3 pb-2", isCollapsed ? "text-center" : "")}>
+            <h3 className={cn("text-sm font-medium text-muted-foreground", isCollapsed ? "hidden" : "")}>
+              Your Projects
+            </h3>
+            {isCollapsed && <Folder className="h-4 w-4 mx-auto text-muted-foreground" />}
+          </div>
+          
+          <SidebarMenu>
+            {isLoading ? (
+              // Show loading skeletons when loading
+              Array(3).fill(0).map((_, i) => (
+                <SidebarMenuItem key={`skeleton-${i}`}>
+                  <div className={cn("px-3 py-2 my-1", isCollapsed ? "flex justify-center" : "")}>
+                    <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                  </div>
+                </SidebarMenuItem>
+              ))
+            ) : projects.length > 0 ? (
+              // Show projects if available
+              projects.map((project) => (
+                <SidebarMenuItem key={project.id}>
+                  <SidebarMenuButton
+                    tooltip={project.name}
+                    asChild
+                    isActive={pathname === `/build/create?projectId=${project.id}`}
+                    className={cn(
+                      "my-1 transition-all duration-200",
+                      pathname === `/build/create?projectId=${project.id}`
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted/80"
+                    )}
+                  >
+                    <Link href={`/build/create?projectId=${project.id}`} className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex h-5 w-5 items-center justify-center",
+                          pathname === `/build/create?projectId=${project.id}`
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        <Folder className="h-4 w-4" />
+                      </div>
+                      <span className="truncate">{project.name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            ) : (
+              // Show empty state if no projects
+              <SidebarMenuItem>
+                <div className={cn("px-3 py-2 text-sm text-muted-foreground", isCollapsed ? "hidden" : "")}>
+                  No projects found
+                </div>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
+        </div>
       </SidebarContent>
 
       <SidebarFooter className="mt-auto">
