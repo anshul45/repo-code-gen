@@ -16,7 +16,7 @@ export const authRoutes = ["/auth/sign-in"];
  * An array of protected route paths.
  * These routes require authentication to access.
  */
-export const protectedRoutes = ["/build/create", "/build/profile"];
+export const protectedRoutes = ["/build/create", "/build/profile", "/build/mvp"];
 
 /**
  * The prefix for API authentication routes.

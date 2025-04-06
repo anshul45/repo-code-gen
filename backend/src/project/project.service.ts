@@ -3,21 +3,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/request.dto';
 import { ProjectResponseDto } from './dto/response.dto';
 import { UpdateProjectDto } from './types/project.types';
+import { CodebaseSyncService } from './codebase-sync.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly codebaseSyncService: CodebaseSyncService,
+  ) {}
 
   async createProject(userId: string, data: CreateProjectDto): Promise<ProjectResponseDto> {
     // Generate a project name based on the initial prompt
     // This is a simple implementation - in the future, you might want to use an AI model
     const projectName = this.generateProjectName(data.initialPrompt);
     
+    // Load base template for the initial codebase
+    const baseTemplate = this.loadBaseTemplate();
+    
     const project = await this.prisma.project.create({
       data: {
         name: projectName,
         userId,
-        codebase: {}, // Initialize with empty JSON object as required by schema
+        codebase: baseTemplate || {}, // Initialize with template or empty JSON object if template loading fails
       },
     });
 
@@ -25,6 +34,22 @@ export class ProjectService {
       id: project.id,
       name: project.name,
     };
+  }
+
+  // Load the base template from the template file
+  private loadBaseTemplate(): Record<string, any> {
+    try {
+      const templatePath = path.resolve(__dirname, '..', 'tools', 'base-template.json');
+      if (fs.existsSync(templatePath)) {
+        const templateData = fs.readFileSync(templatePath, 'utf-8');
+        return JSON.parse(templateData);
+      }
+      console.error('Base template file not found at', templatePath);
+      return {};
+    } catch (error) {
+      console.error('Error loading base template:', error);
+      return {};
+    }
   }
 
   // Simple function to generate a project name from the prompt
@@ -40,7 +65,7 @@ export class ProjectService {
       .substring(0, 50); // Limit length
   }
 
-  async getProject(projectId: string) {
+  async getProject(projectId: string, userId: string) {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -49,6 +74,7 @@ export class ProjectService {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
 
+    // No need to sync to filesystem anymore
     return project;
   }
 
@@ -87,4 +113,17 @@ export class ProjectService {
       where: { id: projectId },
     });
   }
-} 
+
+  async getProjectById(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    return project;
+  }
+
+}
